@@ -1,0 +1,64 @@
+rules_version = '2';
+
+// Reglas para Firestore (pegar en Firebase Console > Firestore > Reglas).
+//
+// Antes de publicar: reemplaza UID_DEL_ORGANIZADOR por el UID del usuario
+// organizador (Firebase > Authentication > Users > columna "User UID").
+//
+// Privacidad:
+// - personas/{clave}: el id ES el código secreto del link. Se puede leer un documento
+//   si conoces su clave exacta, pero nadie puede listar la colección (salvo el organizador).
+//   Ahí vive a quién le regala cada uno.
+// - listas/{publicId}: nombre, grupo, lista de deseos y "tomado" (sin decir por quién).
+// - firmas/{publicId}: solo escritura. Prueba que quien edita una lista conoce la clave del dueño.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function esAdmin() {
+      return request.auth != null && request.auth.uid == 'UID_DEL_ORGANIZADOR';
+    }
+    function abierto() {
+      return request.time < timestamp.date(2027, 1, 31);
+    }
+    function soloCambia(campos) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(campos);
+    }
+    function ruta(col, id) {
+      return /databases/$(database)/documents/$(col)/$(id);
+    }
+
+    match /personas/{clave} {
+      allow get: if true;
+      allow list: if esAdmin();
+      allow create, delete: if esAdmin();
+      allow update: if esAdmin() || (abierto() && (
+        soloCambia(['visto', 'actualizado'])
+        || (soloCambia(['amigos', 'actualizado'])
+            && request.resource.data.amigos is list
+            && request.resource.data.amigos.size() > resource.data.amigos.size()
+            && request.resource.data.amigos.size() <= resource.data.cupo
+            && request.resource.data.amigos.hasAll(resource.data.amigos))
+      ));
+    }
+
+    match /listas/{id} {
+      allow read: if true;
+      allow create, delete: if esAdmin();
+      allow update: if esAdmin() || (abierto() && (
+        // Alguien la elige como amigo secreto (solo una vez).
+        (soloCambia(['tomado', 'actualizado'])
+          && resource.data.tomado == false
+          && request.resource.data.tomado == true)
+        // Su dueño edita sus regalos (la firma del mismo lote trae su clave).
+        || (soloCambia(['regalos', 'actualizado'])
+          && request.resource.data.regalos is list
+          && request.resource.data.regalos.size() <= 3
+          && get(ruta('personas', getAfter(ruta('firmas', id)).data.clave)).data.publicId == id)
+      ));
+    }
+
+    match /firmas/{id} {
+      allow read: if false;
+      allow write: if abierto() || esAdmin();
+    }
+  }
+}
