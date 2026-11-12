@@ -719,9 +719,53 @@ main > *, .duo > *, .col-izq > *, .col-der > * { animation: aparecer .6s cubic-b
   .panel-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: start; gap: 20px; }
   .col-izq, .col-der { display: grid; gap: 20px; align-content: start; }
   .col-izq { position: sticky; top: 16px; }
-  .hero { padding: 24px 0 84px; }
   .hero .hero-contenido { max-width: 960px; }
   .hero-sub { max-width: 60ch; }
+
+  /* Escritorio: todo en una pantalla, sin scroll en la portada */
+  body { min-height: 100dvh; display: flex; flex-direction: column; }
+  body > main { flex: 1 0 auto; align-content: start; width: 100%; }
+  .pie { margin-top: auto; }
+  .marca-banner { height: 72px; }
+  .marca-barra { padding: 9px 16px; }
+  .hero { padding: 16px 0 62px; }
+  .hero-compacto { padding: 14px 0 56px; }
+  .hero-icono { width: 38px; height: 38px; margin-bottom: 0; }
+  .hero-pre { margin-top: 2px; }
+  .hero h1 { font-size: 2.3rem; margin: 8px 0 4px; }
+  .olas { height: 54px; }
+  main { margin-top: -24px; padding-bottom: 8px; }
+  .duo { align-items: stretch; }
+
+  .bienvenida-card { padding: 18px 22px; gap: 4px; }
+  .bienvenida-card .card-titulo { margin-top: 4px; }
+  .icono-circulo { width: 52px; height: 52px; }
+  .icono-circulo svg { width: 24px; height: 24px; }
+  .claves { margin-top: 10px; gap: 8px; }
+  .claves li { padding: 10px 8px; gap: 6px; }
+  .clave-ico { width: 32px; height: 32px; border-radius: 10px; }
+  .clave-ico svg { width: 18px; height: 18px; }
+
+  .tutorial { padding: 18px 22px; }
+  .pasos-tuto { gap: 10px; margin-top: 10px; }
+  .pasos-tuto li { font-size: .9rem; line-height: 1.4; }
+
+  .pie { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; padding: 6px 16px 14px; }
+  .pie img { width: 28px; height: 28px; margin: 0; }
+  .pie p { margin: 0; }
+}
+/* Laptops de poca altura */
+@media (min-width: 900px) and (max-height: 740px) {
+  .marca-banner { height: 58px; }
+  .marca-barra { padding: 7px 16px; }
+  .hero-icono { display: none; }
+  .hero { padding: 12px 0 54px; }
+  .hero h1 { font-size: 2rem; margin: 6px 0 2px; }
+  .olas { height: 46px; }
+  .bienvenida-card, .tutorial { padding: 14px 20px; }
+  .icono-circulo { width: 44px; height: 44px; }
+  .claves li { padding: 8px; }
+  .pasos-tuto { gap: 6px; }
   .regalo-form { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
   .c-nombre, .c-detalle { grid-column: auto; }
   .tutorial:not([open]) { padding: 16px 20px; }
