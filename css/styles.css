@@ -1076,3 +1076,20 @@ main > .nav-admin { animation: none; }
 .dialogo-mensaje .dialogo-acciones { flex-direction: column; }
 .dialogo-mensaje .dialogo-acciones .btn { width: 100%; flex: none; }
 .dialogo-mensaje .btn-wa svg { width: 22px; height: 22px; flex: none; }
+.check-ocultar { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 10px 12px; border-radius: 12px; background: #f3f7fa; color: var(--muted); font-size: .88rem; font-weight: 600; text-align: left; cursor: pointer; }
+.check-ocultar input { width: 20px; height: 20px; flex: none; accent-color: var(--navy); margin: 0; }
+/* El popup siempre cabe: el texto hace scroll y los botones quedan visibles */
+.dialogo-mensaje { padding: 0; overflow: hidden; max-height: calc(100dvh - 24px); }
+.dialogo-mensaje > form { display: flex; flex-direction: column; max-height: calc(100dvh - 24px); padding: 22px; }
+.dialogo-mensaje .mensaje-texto { flex: 1 1 auto; min-height: 60px; max-height: none; padding-right: 4px; overscroll-behavior: contain; }
+.dialogo-mensaje .icono-circulo, .dialogo-mensaje h3, .dialogo-mensaje .check-ocultar, .dialogo-mensaje .dialogo-acciones { flex: none; }
+@media (max-height: 720px) {
+  .dialogo-mensaje > form { padding: 16px 18px; }
+  .dialogo-mensaje .icono-circulo { width: 46px; height: 46px; margin-bottom: 6px; }
+  .dialogo-mensaje .icono-circulo svg { width: 22px; height: 22px; }
+  .dialogo-mensaje h3 { font-size: 1.15rem; margin-bottom: 6px; }
+  .dialogo-mensaje .mensaje-texto { font-size: .92rem; line-height: 1.5; }
+  .dialogo-mensaje .check-ocultar { margin-top: 10px; padding: 8px 10px; }
+  .dialogo-mensaje .dialogo-acciones { margin-top: 12px; gap: 8px; }
+  .dialogo-mensaje .dialogo-acciones .btn { min-height: 44px; padding-block: 8px; }
+}

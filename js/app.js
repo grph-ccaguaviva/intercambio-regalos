@@ -147,12 +147,13 @@ function render() {
 }
 
 // Mensaje que el organizador deja solo para esta persona (vive en su doc privado).
-// Se muestra una vez por visita; si incluye un celular peruano, ofrece WhatsApp.
+// Sale cada vez que entra, hasta que marque "No volver a mostrar" (se recuerda en su
+// dispositivo; si el organizador cambia el texto, vuelve a salir). Con celular peruano, ofrece WhatsApp.
 function mostrarMensajePrivado() {
   const texto = String(persona.mensaje || '').trim();
-  const marca = `intercambio-mensaje-${clave}`;
-  if (!texto || document.querySelector('.dialogo-mensaje')) return;
-  try { if (sessionStorage.getItem(marca) === texto) return; } catch { /* sin storage */ }
+  const marca = `intercambio-mensaje-oculto-${clave}`;
+  if (!texto || mostrarMensajePrivado.cerrado || document.querySelector('.dialogo-mensaje')) return;
+  try { if (localStorage.getItem(marca) === texto) return; } catch { /* sin storage */ }
   const cel = texto.match(/(?:\+?51\s?)?(9\d{2})\s?(\d{3})\s?(\d{3})/);
   const wa = cel
     ? `https://wa.me/51${cel[1]}${cel[2]}${cel[3]}?text=${encodeURIComponent('Hola, te escribo por el intercambio de regalos.')}`
@@ -163,13 +164,17 @@ function mostrarMensajePrivado() {
     <div class="icono-circulo" aria-hidden="true">${ICONO_REGALO}</div>
     <h3>Un mensaje para ti</h3>
     <p class="mensaje-texto">${esc(texto)}</p>
+    <label class="check-ocultar"><input type="checkbox" name="ocultar"><span>No volver a mostrar este mensaje</span></label>
     <div class="dialogo-acciones">
       ${wa ? `<a class="btn btn-wa" href="${esc(wa)}" target="_blank" rel="noopener">${ICONO_WA}<span>Escribir por WhatsApp</span></a>` : ''}
       <button value="ok" class="btn btn-primario" autofocus>Gracias</button>
     </div></form>`;
   document.body.append(d);
   d.addEventListener('close', () => {
-    try { sessionStorage.setItem(marca, texto); } catch { /* sin storage */ }
+    mostrarMensajePrivado.cerrado = true;
+    try {
+      if (d.querySelector('[name="ocultar"]').checked) localStorage.setItem(marca, texto);
+    } catch { /* sin storage */ }
     d.remove();
   });
   d.showModal();
