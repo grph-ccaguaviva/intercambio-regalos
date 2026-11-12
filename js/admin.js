@@ -33,6 +33,7 @@ const ICO = {
   link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>',
   regalo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg>',
   lista: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1 1 2-2M3.5 12l1 1 2-2M3.5 18l1 1 2-2"/></svg>',
+  mensaje: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg>',
   abrir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>',
 };
 
@@ -197,6 +198,7 @@ function pintarDashboard() {
           <span><b>${esc(p.nombre)}</b><small>${p.grupo === 'menores' ? `Hijos · ${esc(p.responsable || 'papás')}` : 'Mayores'}</small></span>
         </button>
         <a class="btn-icono btn-icono-wa" href="${esc(waUrl(mensajeWa(p)))}" target="_blank" rel="noopener" title="Enviar por WhatsApp" aria-label="Enviar link de ${esc(p.nombre)} por WhatsApp">${ICO.wa}</a>
+        <button type="button" class="btn-icono" data-accion="copiar-mensaje" data-id="${esc(p.id)}" title="Copiar mensaje con el link" aria-label="Copiar mensaje de invitación de ${esc(p.nombre)}">${ICO.mensaje}</button>
         <button type="button" class="btn-icono" data-accion="copiar" data-id="${esc(p.id)}" title="Copiar link" aria-label="Copiar link de ${esc(p.nombre)}">${ICO.copiar}</button>
       </li>`).join('')}</ul>` : '<p class="exito">Todos ya abrieron su link.</p>'}`;
 }
@@ -343,15 +345,69 @@ function segmentoSexo(actual = '') {
   </div>`;
 }
 
+// Invitación con el link personal (WhatsApp y "Copiar mensaje").
+// Mayores: trato según sexo. Hijos: el mensaje va a los papás.
 function mensajeWa(p) {
   const link = linkPersonal(p.id);
-  const min = dinero(ajustes.montoMinimo);
+  const min = `${ajustes.moneda} ${Number(ajustes.montoMinimo).toFixed(2)}`;
+  const evento = `${ajustes.evento} – ${ajustes.subtitulo}`;
+  const varios = cupoDe(p) > 1;
+  const asignados = (p.amigos || []).length;
+  const completo = asignados >= cupoDe(p);
+  // Paso 2 según si el organizador ya registró a quién le regala.
+  let paso2;
   if (p.grupo === 'menores') {
-    return `Hola ${p.responsable || ''}! Este es el link de ${p.nombre} para el ${grupos.menores}: ${link}\n\n` +
-      `Ahí registran a quién le tocó a ${p.nombre} y su lista de ${N} regalos (mínimo ${min}). Es personal, no lo compartan.`;
+    paso2 = completo
+      ? `✅ 2. Su amigo secreto ya está registrado: Al ingresar verán a quién le regala ${p.nombre}. Esta información es privada.\n\n`
+      : `✅ 2. Registren a su amigo secreto: Seleccionen a quién le tocó a ${p.nombre} en el sorteo. Esta información será privada.\n\n`;
+  } else if (completo) {
+    paso2 = varios
+      ? '✅ 2. Tus amigos secretos ya están registrados: Al ingresar verás a quiénes les regalas. Esta información es privada.\n\n'
+      : '✅ 2. Tu amigo secreto ya está registrado: Al ingresar verás a quién le regalas. Esta información es privada.\n\n';
+  } else if (asignados > 0) {
+    paso2 = `✅ 2. Completa tus amigos secretos: Ya registramos ${asignados} de ${cupoDe(p)}. Selecciona a la otra persona que te tocó en el sorteo. Esta información será privada.\n\n`;
+  } else {
+    paso2 = varios
+      ? `✅ 2. Registra a tus ${cupoDe(p)} amigos secretos: Selecciona a las personas que te tocaron en el sorteo. Esta información será privada.\n\n`
+      : '✅ 2. Registra a tu amigo secreto: Selecciona a la persona que te tocó en el sorteo. Esta información será privada.\n\n';
   }
-  return `Hola ${p.nombre}! Este es tu link para el ${ajustes.evento}: ${link}\n\n` +
-    `Ahí registras a quién te tocó y escribes tus ${N} opciones de regalo (mínimo ${min}). Es personal, no lo compartas.`;
+  const cierre = `\n\nCon cariño,\n${ajustes.firma} 🙏🏻`;
+  const reflexion = '❤️ Más allá de los regalos, lo más hermoso será compartir juntos una noche llena de alegría, amor, unión y la presencia de Dios.\n\n' +
+    'Que esta Navidad sea una oportunidad para agradecer por todas las bendiciones recibidas, fortalecer nuestros lazos como hermanos en Cristo y recordar que el regalo más grande que hemos recibido es nuestro Señor Jesucristo. 🙌🏻❤️';
+
+  if (p.grupo === 'menores') {
+    const papas = p.responsable ? `hermanos ${p.responsable}` : 'querida familia';
+    return `🎄🎁 ¡Dios los bendiga mucho, ${papas}! ❤️🙏🏻\n\n` +
+      `Con mucho cariño y alegría queremos que ${p.nombre} sea parte de nuestro ${evento} de los hijos, que celebraremos este ${ajustes.fecha} junto a nuestra hermosa familia de Agua Viva. 🥰✨\n\n` +
+      `🎅🏻 ¡Este es el enlace personal de ${p.nombre}!\n\n🔗 ${link}\n\n` +
+      '🎁 ¿Qué deben hacer?\n\n' +
+      '✅ 1. Ingresen al enlace: Es exclusivo para su familia, por lo que les pedimos no compartirlo con nadie.\n\n' +
+      paso2 +
+      `✅ 3. Agreguen ${N} opciones de regalo: Escriban ${N} cosas que a ${p.nombre} le gustaría recibir, con un valor mínimo de ${min}.\n\n` +
+      '✅ 4. Personalicen los regalos: Pueden agregar fotografías, enlaces de tiendas, tallas, colores, modelos y cualquier detalle que ayude a elegir el regalo perfecto. 🎀\n\n' +
+      '✅ 5. Consulten los deseos de su amigo secreto: Desde el mismo enlace podrán revisar qué regalos le gustaría recibir, una vez que haya completado su lista. 🎁\n\n' +
+      '✨ Recuerden: Pueden volver a ingresar al enlace cuando lo necesiten.\n\n' +
+      `${reflexion}\n\n` +
+      '📩 ¿Tienen alguna duda o necesitan ayuda? Escríbanme por interno con toda confianza. Estaré muy agradecido de poder apoyarlos en lo que necesiten. 😊\n\n' +
+      `¡Dios los bendiga abundantemente! Que disfrutemos de una hermosa Navidad y un intercambio lleno de sorpresas y bendiciones. 🎄🎁❤️${cierre}`;
+  }
+
+  const trato = { F: 'hermana ', M: 'hermano ' }[p.sexo] || '';
+  return `🎄🎁 ¡Dios te bendiga mucho, ${trato}${p.nombre}! ❤️🙏🏻\n\n` +
+    `Con mucho cariño y alegría queremos que seas parte de nuestro ${evento}, que celebraremos este ${ajustes.fecha} junto a nuestra hermosa familia de Agua Viva. 🥰✨\n\n` +
+    `🎅🏻 ¡Ya tienes tu enlace personal para participar!\n\n🔗 ${link}\n\n` +
+    '🎁 ¿Qué debes hacer?\n\n' +
+    '✅ 1. Ingresa a tu enlace personal: Es exclusivo para ti, por lo que te pedimos no compartirlo con nadie.\n\n' +
+    paso2 +
+    `✅ 3. Agrega tus ${N} opciones de regalo: Escribe ${N === 3 ? 'tres' : N} cosas que te gustaría recibir, con un valor mínimo de ${min}.\n\n` +
+    `✅ 4. Personaliza tus regalos: Puedes agregar fotografías, enlaces de tiendas, tallas, colores, modelos y cualquier detalle que ayude a tu amigo secreto a elegir el regalo perfecto. 🎀\n\n` +
+    (varios
+      ? '✅ 5. Consulta los deseos de tus amigos secretos: Desde tu mismo enlace podrás revisar qué regalos les gustaría recibir a las personas que te tocaron, una vez que hayan completado su lista. 🎁\n\n'
+      : '✅ 5. Consulta los deseos de tu amigo secreto: Desde tu mismo enlace podrás revisar qué regalos le gustaría recibir a la persona que te tocó, una vez que haya completado su lista. 🎁\n\n') +
+    '✨ Recuerda: Puedes volver a ingresar a tu enlace cuando lo necesites para revisar la información de tu intercambio.\n\n' +
+    `${reflexion}\n\n` +
+    '📩 ¿Tienes alguna duda o necesitas ayuda? Escríbeme por interno con toda confianza. Estaré muy agradecido de poder apoyarte en lo que necesites. 😊\n\n' +
+    `¡Dios te bendiga abundantemente, ${trato}${p.nombre}! Que disfrutemos de una hermosa Navidad y un intercambio lleno de sorpresas y bendiciones. 🎄🎁❤️${cierre}`;
 }
 
 /* ---------- Hoja de detalle ---------- */
@@ -405,7 +461,8 @@ function pintarHoja(forzar = false) {
         <p class="nota">${p.visto ? 'Ya abrió su link.' : 'Todavía no abre su link.'} Envíaselo solo a ${p.grupo === 'menores' ? 'sus papás' : 'esta persona'}.</p>
         <div class="acciones-2">
           <a class="btn btn-wa" href="${esc(waUrl(mensajeWa(p)))}" target="_blank" rel="noopener">${ICO.wa}<span>Enviar por WhatsApp</span></a>
-          <button class="btn btn-secundario" type="button" data-accion="copiar" data-id="${esc(p.id)}">${ICO.copiar}<span>Copiar link</span></button>
+          <button class="btn btn-primario" type="button" data-accion="copiar-mensaje" data-id="${esc(p.id)}">${ICO.mensaje}<span>Copiar mensaje de invitación</span></button>
+          <button class="btn btn-secundario" type="button" data-accion="copiar" data-id="${esc(p.id)}">${ICO.copiar}<span>Copiar solo el link</span></button>
         </div>
         <a class="enlace-sec" href="${esc(`${linkPersonal(p.id)}&admin=1`)}" target="_blank" rel="noopener">${ICO.abrir}Abrir su página para llenarla por esta persona</a>
       </section>
@@ -725,6 +782,9 @@ raiz.addEventListener('click', async (e) => {
       await ejecutar(abiertos.map((x) => ({ tipo: 'update', col: 'personas', id: x.id, datos: { visto: false, actualizado: ahora } })), 'Contador reiniciado');
       break;
     }
+    case 'copiar-mensaje':
+      copiar(mensajeWa(p), `Mensaje de ${p.nombre} copiado`);
+      break;
     case 'copiar':
       copiar(linkPersonal(p.id), `Link de ${p.nombre} copiado`);
       break;

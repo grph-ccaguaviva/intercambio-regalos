@@ -24,6 +24,9 @@ export const ajustes = {
   montoMinimo: 40,
   moneda: 'S/',
   cantidadRegalos: 3,
+  // Para el mensaje de invitación que se envía con cada link.
+  fecha: '19 de diciembre',
+  firma: 'Giancarlo',
   // Acceso del organizador: en el panel solo se escribe el PIN.
   // - Con Firebase: el PIN es la contraseña del usuario `correoAdmin` creado en
   //   Firebase > Authentication (se valida en el servidor; el PIN no vive en este código).
