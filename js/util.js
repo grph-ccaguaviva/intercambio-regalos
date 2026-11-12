@@ -131,14 +131,77 @@ export function cargando(btn, activo) {
   else { btn.textContent = btn.dataset.texto || btn.textContent; btn.disabled = false; }
 }
 
+// Solo imágenes embebidas propias (data URL base64). En <img> un SVG no ejecuta scripts.
+export function imagenSegura(src = '') {
+  return typeof src === 'string' && /^data:image\/(jpeg|png|webp|svg\+xml);base64,[A-Za-z0-9+/=]+$/.test(src);
+}
+
+function cargarImagen(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('No se pudo leer la imagen')); };
+    img.src = url;
+  });
+}
+
+// Reduce la foto en el navegador (máx. ~140 KB) para guardarla junto a la lista sin costo.
+export async function comprimirImagen(file, lado = 640) {
+  if (!file?.type?.startsWith('image/')) throw new Error('El archivo no es una imagen');
+  const img = await cargarImagen(file);
+  let max = lado;
+  let url = '';
+  for (let intento = 0; intento < 3; intento++) {
+    const factor = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(img.naturalWidth * factor));
+    c.height = Math.max(1, Math.round(img.naturalHeight * factor));
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    let q = 0.8;
+    url = c.toDataURL('image/jpeg', q);
+    while (url.length > 140000 && q > 0.45) { q -= 0.07; url = c.toDataURL('image/jpeg', q); }
+    if (url.length <= 140000) return url;
+    max = Math.round(max * 0.75);
+  }
+  return url;
+}
+
+export function htmlTarjetasRegalos(regalos = []) {
+  return `<div class="deseos-grid">${regalos.map((g, i) => {
+    const url = urlSegura(g.donde);
+    let donde = '';
+    if (url) donde = `<a class="deseo-enlace" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Ver dónde comprarlo <span aria-hidden="true">↗</span></a>`;
+    else if (g.donde) donde = `<p class="deseo-donde"><b>Dónde:</b> ${esc(g.donde)}</p>`;
+    const img = imagenSegura(g.imagen)
+      ? `<img src="${esc(g.imagen)}" alt="Foto: ${esc(g.nombre)}" loading="lazy">`
+      : `<span class="deseo-sin-foto">${ICONO_REGALO}</span>`;
+    return `<article class="deseo">
+      <div class="deseo-img">${img}<span class="deseo-num">Opción ${i + 1}</span></div>
+      <div class="deseo-cuerpo">
+        <h3>${esc(g.nombre)}</h3>
+        <span class="precio">aprox. ${dinero(g.precio)}</span>
+        ${g.detalle ? `<p class="deseo-detalle">${esc(g.detalle)}</p>` : ''}
+        ${donde}
+      </div>
+    </article>`;
+  }).join('')}</div>`;
+}
+
 export function htmlRegalos(regalos = []) {
   return `<ol class="regalos">${regalos.map((g, i) => {
     const url = urlSegura(g.donde);
     const donde = url
       ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">Ver dónde comprarlo</a>`
       : g.donde ? `<p class="regalo-donde">Dónde: ${esc(g.donde)}</p>` : '';
+    const marca = imagenSegura(g.imagen)
+      ? `<img class="regalo-thumb" src="${esc(g.imagen)}" alt="">`
+      : `<span class="regalo-num">${i + 1}</span>`;
     return `<li class="regalo">
-      <span class="regalo-num">${i + 1}</span>
+      ${marca}
       <div>
         <p class="regalo-nombre">${esc(g.nombre)}</p>
         <p class="regalo-precio">aprox. ${dinero(g.precio)}</p>

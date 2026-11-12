@@ -905,6 +905,131 @@ main > .nav-admin { animation: none; }
   .admin .marca-banner { height: 54px; }
 }
 
+/* ---------- Participante: pestañas, formulario con foto y tarjetas ---------- */
+.saludo-panel .saludo-fila { align-items: center; }
+.saludo-panel .saludo-textos { flex: 1; }
+.saludo-panel h2 { margin: 0; }
+.nav-part .nav-item { flex: 1; justify-content: center; position: relative; }
+.punto { width: 9px; height: 9px; border-radius: 50%; background: #f3a73b; box-shadow: 0 0 0 3px rgba(243, 167, 59, .18); flex: none; }
+.punto.ok { background: var(--green); box-shadow: 0 0 0 3px rgba(42, 157, 140, .18); }
+.mt-btn { margin-top: 14px; }
+.centro { text-align: center; }
+.sec-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.sec-cab .btn { min-height: 42px; padding: 8px 14px; }
+.sec-cab .btn svg { width: 18px; height: 18px; }
+.pila-lateral { display: grid; gap: 16px; align-content: start; }
+.vacio-accion { display: grid; gap: 12px; justify-items: start; }
+.vacio-accion p { margin: 0; }
+.btn svg { flex: none; }
+.btn-bloque svg { width: 20px; height: 20px; }
+
+/* Formulario: cada opción con foto */
+.regalo-form { display: block; padding: 16px; border-radius: 16px; background: #fff; }
+.regalo-form + .regalo-form { margin-top: 2px; }
+.rf-grid { display: grid; gap: 14px; margin-top: 4px; }
+.rf-campos { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+.rf-campos .c-nombre, .rf-campos .c-detalle { grid-column: 1 / -1; }
+.rf-campos textarea { min-height: 88px; resize: vertical; line-height: 1.45; }
+.cargando-foto { opacity: .55; pointer-events: none; }
+
+.foto-drop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 2px dashed #cfdbe4;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f6fafc, #eef6f9);
+  color: var(--navy);
+  cursor: pointer;
+  transition: border-color .2s, background-color .2s;
+}
+.foto-drop:hover { border-color: var(--cyan); }
+.foto-drop:focus-within { outline: 3px solid var(--gold); outline-offset: 2px; }
+.foto-drop svg { width: 30px; height: 30px; flex: none; color: var(--cyan); }
+.foto-drop b { display: block; font-size: .92rem; }
+.foto-drop small { display: block; color: var(--muted); font-size: .8rem; font-weight: 600; }
+.foto-prev { position: relative; }
+.foto-prev img { display: block; width: 100%; height: 170px; object-fit: cover; border-radius: 14px; border: 1px solid var(--line); }
+.foto-quitar { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(20, 30, 40, .65); color: #fff; cursor: pointer; }
+.foto-quitar svg { width: 18px; height: 18px; }
+.foto-cambiar { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; color: var(--navy); font-weight: 700; font-size: .85rem; cursor: pointer; }
+.foto-cambiar svg { width: 16px; height: 16px; }
+
+/* Tarjetas de regalos (mi lista y lo que desea el amigo) */
+.deseos-grid { display: grid; gap: 14px; margin-top: 12px; }
+.deseo {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(37, 54, 69, .05);
+  transition: transform .2s, box-shadow .2s;
+  animation: aparecer .45s cubic-bezier(.2, .8, .2, 1) both;
+}
+.deseo:nth-child(2) { animation-delay: .07s; }
+.deseo:nth-child(3) { animation-delay: .14s; }
+@media (hover: hover) {
+  .deseo:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(37, 54, 69, .12); }
+}
+.deseo-img { position: relative; min-height: 112px; background: linear-gradient(135deg, var(--gold-soft), #ffe3bd); display: grid; place-items: center; }
+.deseo-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.deseo-sin-foto svg { width: 42px; height: 42px; color: #d97a00; }
+.deseo-num { position: absolute; top: 8px; left: 8px; padding: 3px 9px; border-radius: 999px; background: rgba(15, 30, 45, .62); color: #fff; font-size: .7rem; font-weight: 800; letter-spacing: .02em; }
+.deseo-cuerpo { padding: 12px 14px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.deseo-cuerpo h3 { margin: 0; font-size: 1rem; line-height: 1.3; overflow-wrap: anywhere; }
+.precio { justify-self: start; padding: 3px 10px; border-radius: 999px; background: var(--green-soft); color: var(--green-700); font-weight: 800; font-size: .82rem; }
+.deseo-detalle { margin: 0; color: var(--ink); font-size: .9rem; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.deseo-donde { margin: 0; color: var(--muted); font-size: .85rem; overflow-wrap: anywhere; }
+.deseo-enlace { justify-self: start; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 10px; background: var(--navy); color: #fff; font-weight: 700; font-size: .85rem; text-decoration: none; }
+.deseo-enlace:hover { background: #003a58; }
+.regalo-thumb { width: 34px; height: 34px; border-radius: 10px; object-fit: cover; border: 1px solid var(--line); }
+
+@media (min-width: 480px) {
+  .rf-campos { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+}
+@media (min-width: 640px) {
+  .deseos-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .deseo { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .deseo-img { aspect-ratio: 4 / 3; min-height: 0; height: auto; }
+  .deseo-cuerpo { padding: 14px 16px 16px; }
+}
+@media (min-width: 760px) {
+  .rf-grid { grid-template-columns: 210px minmax(0, 1fr); gap: 18px; }
+  .rf-foto { display: flex; flex-direction: column; }
+  .rf-foto .foto-drop { flex: 1; flex-direction: column; justify-content: center; text-align: center; min-height: 210px; }
+  .rf-foto .foto-drop svg { width: 40px; height: 40px; }
+  .foto-prev img { height: 210px; }
+  .nav-part { position: sticky; top: 10px; z-index: 20; }
+}
+@media (min-width: 900px) {
+  #tab-amigo { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; }
+  .deseos-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .rf-campos .c-nombre, .rf-campos .c-detalle { grid-column: 1 / -1; }
+}
+@media (max-width: 759px) {
+  .nav-part .punto { position: absolute; top: 4px; left: calc(50% + 9px); width: 8px; height: 8px; }
+  .acciones-fijas {
+    position: sticky;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    z-index: 5;
+    padding: 10px;
+    margin: 0 -6px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .94);
+    box-shadow: 0 -4px 18px rgba(37, 54, 69, .1);
+    backdrop-filter: blur(6px);
+  }
+  .regalo-form { padding: 12px; }
+  .saludo-panel .avatar-grande { width: 44px; height: 44px; }
+  body.con-nav .hero { padding: 12px 0 50px; }
+  body.con-nav .hero-icono, body.con-nav .hero-sub { display: none; }
+  body.con-nav .hero h1 { font-size: 1.35rem; margin: 6px 0 0; }
+  body.con-nav .marca-banner { height: 54px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }

@@ -1,30 +1,44 @@
-import api, { modoDemo } from './db.js';
+import api, { modoDemo, modoDemoVista, CLAVE_DEMO } from './db.js';
 import { ajustes, grupos } from './config.js';
 import {
   esc, linkPersonal, copiar, toast, waUrl, dinero, confirmar, cargando, listaCompleta,
-  htmlRegalos, ICONO_REGALO, ICONO_WA, aplicarMarca, ordenarPorNombre, celebrar,
+  htmlTarjetasRegalos, ICONO_REGALO, ICONO_WA, aplicarMarca, ordenarPorNombre, celebrar,
+  comprimirImagen, imagenSegura,
 } from './util.js';
-
-const ICONO_LINK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>';
-const ICONO_CANDADO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
-const revelados = new Set();
 
 const KEY_CLAVE = 'intercambio-clave';
 const N = ajustes.cantidadRegalos;
 const MIN = ajustes.montoMinimo;
-const EJEMPLOS = ['Ej.: Perfume floral', 'Ej.: Polo deportivo talla M', 'Ej.: Libro devocional'];
+const EJEMPLOS = ['Ej.: Perfume floral', 'Ej.: Polo deportivo', 'Ej.: Libro devocional'];
+const TABS = ['amigo', 'lista', 'deseos'];
+
+const svg = (d, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${d}</svg>`;
+const ICO = {
+  link: svg('<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>'),
+  candado: svg('<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'),
+  persona: svg('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
+  lista: svg('<path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1 1 2-2M3.5 12l1 1 2-2M3.5 18l1 1 2-2"/>'),
+  corazon: svg('<path d="M12 21s-7.5-4.6-9.5-9.2C1 8.4 3.2 4.5 7 4.5c2.1 0 3.6 1.2 5 3 1.4-1.8 2.9-3 5-3 3.8 0 6 3.9 4.5 7.3C19.5 16.4 12 21 12 21Z"/>'),
+  camara: svg('<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13.5" r="3.5"/>'),
+  quitar: svg('<path d="M18 6 6 18M6 6l12 12"/>'),
+  flecha: svg('<path d="M5 12h14M13 6l6 6-6 6"/>'),
+  editar: svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>'),
+};
 
 const params = new URLSearchParams(location.search);
 const vistaAdmin = params.has('admin'); // el organizador abre la página de alguien
 const app = document.getElementById('app');
 
-let clave = params.get('k');
-let persona;          // undefined = cargando, null = link inválido
+let clave = params.get('k') || (modoDemoVista ? CLAVE_DEMO : null);
+let persona; // undefined = cargando, null = link inválido
 let listas = [];
 let listasCargadas = false;
 let editando = false;
 let marcandoVisto = false;
 let amigoElegido = '';
+let tab = TABS.includes(params.get('tab')) ? params.get('tab') : null;
+let fotos = [];
+const revelados = new Set();
 
 const leerClave = () => { try { return localStorage.getItem(KEY_CLAVE); } catch { return null; } };
 function guardarClave(v) {
@@ -34,7 +48,11 @@ function guardarClave(v) {
 aplicarMarca();
 document.getElementById('hero-sub').textContent =
   `Registra a quién te tocó y escribe tus ${N} opciones de regalo (mínimo ${dinero(MIN)}).`;
-document.getElementById('aviso-demo').hidden = !modoDemo;
+const aviso = document.getElementById('aviso-demo');
+aviso.hidden = !modoDemo;
+if (modoDemoVista) {
+  aviso.textContent = 'Vista de demostración con datos de ejemplo: puedes probar todo, nada se guarda de verdad.';
+}
 
 if (!clave && leerClave()) {
   clave = leerClave();
@@ -48,7 +66,16 @@ if (clave) {
   renderSinLink();
 }
 
-/* ---------- Render ---------- */
+/* ---------- Datos derivados ---------- */
+
+function miLista() { return listas.find((l) => l.id === persona.publicId) || { regalos: [] }; }
+function misAmigos() { return (persona.amigos || []).map((id) => listas.find((l) => l.id === id)).filter(Boolean); }
+function cupo() { return persona.cupo ?? 1; }
+function esMenor() { return persona.grupo === 'menores'; }
+function amigoCompleto() { return misAmigos().length >= cupo(); }
+function deseosListos() { const a = misAmigos(); return a.length > 0 && a.every((x) => x.regalos?.length); }
+
+/* ---------- Pantallas sin panel ---------- */
 
 function tutorialHtml(abierto, clase = '') {
   return `<details class="card tutorial ${clase}" ${abierto ? 'open' : ''}>
@@ -56,7 +83,7 @@ function tutorialHtml(abierto, clase = '') {
     <ol class="pasos-tuto">
       <li><div><b>Abre tu link personal</b>El organizador te lo envía por WhatsApp. Es solo tuyo: no lo compartas.</div></li>
       <li><div><b>Indica a quién te tocó</b>Elige el nombre de la persona que sacaste en el sorteo. Nadie más verá a quién elegiste.</div></li>
-      <li><div><b>Escribe tus ${N} opciones de regalo</b>Cosas que te gustaría recibir, de ${dinero(MIN)} a más. Puedes poner talla, color o un link.</div></li>
+      <li><div><b>Escribe tus ${N} opciones de regalo</b>Cosas que te gustaría recibir, de ${dinero(MIN)} a más. Puedes agregar foto, talla, color o un link.</div></li>
       <li><div><b>Mira lo que pidió tu amigo secreto</b>Vuelve con tu link cuando quieras para ver si ya llenó su lista.</div></li>
     </ol>
   </details>`;
@@ -64,12 +91,12 @@ function tutorialHtml(abierto, clase = '') {
 
 function tarjetaAcceso(titulo, texto) {
   return `<section class="card bienvenida-card">
-    <div class="icono-circulo" aria-hidden="true">${ICONO_LINK}</div>
+    <div class="icono-circulo" aria-hidden="true">${ICO.link}</div>
     <h2 class="card-titulo">${titulo}</h2>
     <p class="nota">${texto}</p>
     <ul class="claves">
       <li><span class="clave-ico ico-wa">${ICONO_WA}</span><span><b>Te llega por WhatsApp</b>El organizador te lo envía.</span></li>
-      <li><span class="clave-ico">${ICONO_CANDADO}</span><span><b>Es solo tuyo</b>No lo compartas con nadie.</span></li>
+      <li><span class="clave-ico">${ICO.candado}</span><span><b>Es solo tuyo</b>No lo compartas con nadie.</span></li>
       <li><span class="clave-ico ico-regalo">${ICONO_REGALO}</span><span><b>Sin contraseñas</b>Abres el link y listo.</span></li>
     </ul>
   </section>`;
@@ -84,10 +111,20 @@ function renderSinLink() {
   </div>`;
 }
 
+function mostrarError(err) {
+  console.error(err);
+  app.dataset.vista = 'error';
+  app.innerHTML = `<section class="card"><h2 class="card-titulo">No se pudo cargar</h2>
+    <p class="nota">Revisa tu conexión a internet y recarga la página.</p></section>`;
+}
+
+/* ---------- Render principal ---------- */
+
 function render() {
   if (persona === undefined || !listasCargadas) return;
   if (persona === null) {
     if (!vistaAdmin) guardarClave(null);
+    document.body.classList.remove('con-nav');
     app.dataset.vista = 'invalido';
     app.classList.add('app-ancho');
     app.innerHTML = `<div class="duo">
@@ -96,7 +133,7 @@ function render() {
     </div>`;
     return;
   }
-  if (!vistaAdmin) {
+  if (!vistaAdmin && !modoDemoVista) {
     guardarClave(clave);
     if (!persona.visto && !marcandoVisto) {
       marcandoVisto = true;
@@ -107,36 +144,47 @@ function render() {
   renderPanel();
 }
 
-function miLista() { return listas.find((l) => l.id === persona.publicId) || { regalos: [] }; }
-function misAmigos() { return (persona.amigos || []).map((id) => listas.find((l) => l.id === id)).filter(Boolean); }
-function cupo() { return persona.cupo ?? 1; }
-function esMenor() { return persona.grupo === 'menores'; }
+function tabInicial() {
+  if (cupo() > 0 && !amigoCompleto()) return 'amigo';
+  if (!listaCompleta(miLista())) return 'lista';
+  return cupo() > 0 ? 'deseos' : 'lista';
+}
 
 function renderPanel() {
   const vista = `panel-${clave}`;
   if (app.dataset.vista !== vista) {
     app.dataset.vista = vista;
+    app.classList.add('app-ancho');
+    document.body.classList.add('con-nav');
     editando = !listaCompleta(miLista());
+    if (editando) prepararFotos();
+    tab ??= tabInicial();
     const link = linkPersonal(clave);
     const msg = `Mi link para el ${ajustes.evento} (es personal, no lo compartas): ${link}`;
-    app.classList.add('app-ancho');
     app.innerHTML = `
       ${vistaAdmin ? '<p class="aviso aviso-card">Estás viendo esta página como organizador. Los cambios se guardan a nombre de esta persona.</p>' : ''}
-      <div class="panel-grid">
-        <div class="col-izq">
-          <section class="card saludo o-1">
-            <div class="saludo-fila">
-              <div class="saludo-textos">
-                <p class="saludo-pre">${esMenor() ? 'Página de' : 'Hola,'}</p>
-                <h2 id="mi-nombre"></h2>
-                <p class="nota" id="mi-grupo"></p>
-              </div>
-              ${vistaAdmin ? '' : '<button class="btn-link" type="button" data-accion="salir">Salir</button>'}
-            </div>
-            <div class="progreso" id="progreso"></div>
-          </section>
-          <section class="card o-2" id="sec-amigo"></section>
-          <section class="card card-link o-5">
+      <section class="card saludo saludo-panel">
+        <div class="saludo-fila">
+          <span class="avatar avatar-grande" id="mi-avatar" aria-hidden="true"></span>
+          <div class="saludo-textos">
+            <p class="saludo-pre">${esMenor() ? 'Página de' : 'Hola,'}</p>
+            <h2 id="mi-nombre"></h2>
+            <p class="nota" id="mi-grupo"></p>
+          </div>
+          ${vistaAdmin || modoDemoVista ? '' : '<button class="btn-link" type="button" data-accion="salir">Salir</button>'}
+        </div>
+      </section>
+
+      <nav class="nav-admin nav-part" aria-label="Secciones">
+        <button type="button" class="nav-item" data-accion="tab" data-tab="amigo">${ICO.persona}<span>Amigo secreto</span><i class="punto" id="punto-amigo"></i></button>
+        <button type="button" class="nav-item" data-accion="tab" data-tab="lista">${ICO.lista}<span>Mi lista</span><i class="punto" id="punto-lista"></i></button>
+        <button type="button" class="nav-item" data-accion="tab" data-tab="deseos">${ICO.corazon}<span>Lo que desea</span><i class="punto" id="punto-deseos"></i></button>
+      </nav>
+
+      <div class="vista tab-amigo" id="tab-amigo" hidden>
+        <section class="card" id="sec-amigo"></section>
+        <div class="pila-lateral">
+          <section class="card card-link">
             <h2 class="card-titulo">Tu link personal</h2>
             <p class="nota">Es tu llave para volver desde cualquier celular. <b>No lo compartas.</b></p>
             <div class="link-box">
@@ -145,33 +193,48 @@ function renderPanel() {
               <a class="btn-icono btn-icono-wa" href="${esc(waUrl(msg))}" target="_blank" rel="noopener" title="Guardármelo en WhatsApp" aria-label="Guardármelo en WhatsApp">${ICONO_WA}</a>
             </div>
           </section>
-          ${tutorialHtml(false, 'o-6')}
+          ${tutorialHtml(false)}
         </div>
-        <div class="col-der">
-          <section class="card o-3" id="sec-lista"></section>
-          <section class="card card-destacada o-4" id="sec-deseos"></section>
-        </div>
-      </div>`;
+      </div>
+      <div class="vista" id="tab-lista" hidden><section class="card" id="sec-lista"></section></div>
+      <div class="vista" id="tab-deseos" hidden><section class="card card-destacada" id="sec-deseos"></section></div>`;
   }
 
   document.getElementById('mi-nombre').textContent = persona.nombre;
+  document.getElementById('mi-avatar').textContent = persona.nombre.slice(0, 1).toUpperCase();
   document.getElementById('mi-grupo').textContent = esMenor()
     ? `${grupos.menores}${persona.responsable ? ` · La llenan ${persona.responsable}` : ''}`
     : grupos[persona.grupo] || '';
-  pintarProgreso();
+  pintarNav();
   pintarAmigo();
   pintarLista();
-  document.getElementById('sec-deseos').innerHTML = htmlDeseos();
+  pintarDeseos();
 }
 
-function pintarProgreso() {
-  const amigos = misAmigos();
-  const chip = (ok, txt) => `<span class="chip ${ok ? 'ok' : ''}">${ok ? '✓ ' : ''}${txt}</span>`;
-  document.getElementById('progreso').innerHTML =
-    chip(amigos.length >= cupo(), cupo() > 1 ? `Amigos secretos ${amigos.length}/${cupo()}` : 'Amigo secreto') +
-    chip(listaCompleta(miLista()), 'Mi lista') +
-    chip(amigos.length > 0 && amigos.every((a) => a.regalos?.length), 'Lista de mi amigo');
+function pintarNav() {
+  const estado = { amigo: cupo() === 0 || amigoCompleto(), lista: listaCompleta(miLista()), deseos: deseosListos() };
+  TABS.forEach((t) => {
+    const activo = t === tab;
+    const b = app.querySelector(`.nav-item[data-tab="${t}"]`);
+    b.classList.toggle('activo', activo);
+    b.setAttribute('aria-current', activo ? 'page' : 'false');
+    document.getElementById(`punto-${t}`).className = `punto ${estado[t] ? 'ok' : ''}`;
+    document.getElementById(`tab-${t}`).hidden = !activo;
+  });
 }
+
+function irA(t) {
+  tab = t;
+  pintarNav();
+  const nav = app.querySelector('.nav-part');
+  if (nav && window.matchMedia('(min-width: 760px)').matches) {
+    nav.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    window.scrollTo({ top: app.offsetTop - 12, behavior: 'smooth' });
+  }
+}
+
+/* ---------- Pestaña: amigo secreto ---------- */
 
 function pintarAmigo(forzar = false) {
   const sec = document.getElementById('sec-amigo');
@@ -186,7 +249,6 @@ function pintarAmigo(forzar = false) {
     return;
   }
   const completo = amigos.length >= total;
-  const titulo = total > 1 ? `Tus amigos secretos (${amigos.length}/${total})` : 'Tu amigo secreto';
   const bloques = amigos.map((a) =>
     `<div class="amigo ${revelados.has(a.id) ? '' : 'revelar'}">${ICONO_REGALO}<div><span class="amigo-etq">${esMenor() ? 'Le regala a' : 'Le regalas a'}</span><p class="amigo-nombre">${esc(a.nombre)}</p></div></div>`).join('');
   amigos.forEach((a) => revelados.add(a.id));
@@ -207,96 +269,169 @@ function pintarAmigo(forzar = false) {
       : '<p class="vacio">No hay nombres disponibles. Avisa al organizador.</p>';
   }
 
-  sec.innerHTML = `<h2 class="card-titulo"><span class="paso ${completo ? 'hecho' : ''}">${completo ? '✓' : '2'}</span> ${completo ? titulo : '¿A quién le regalas?'}</h2>
-    ${completo ? '' : `<p class="nota">Elige el nombre de la persona que ${esMenor() ? `le tocó a ${esc(persona.nombre)}` : 'te tocó'} en el sorteo. Solo tú lo verás.</p>`}
+  const quien = esMenor() ? `le tocó a ${esc(persona.nombre)}` : 'te tocó';
+  const titulo = total > 1 ? `Tus amigos secretos (${amigos.length}/${total})` : 'Tu amigo secreto';
+  const verDeseos = amigos.length === 1 ? `Ver lo que desea ${esc(amigos[0].nombre)}` : 'Ver lo que desean';
+  sec.innerHTML = `<h2 class="card-titulo"><span class="paso ${completo ? 'hecho' : ''}">${completo ? '✓' : '1'}</span> ${completo ? titulo : '¿A quién le regalas?'}</h2>
+    ${completo ? '' : `<p class="nota">Elige el nombre de la persona que ${quien} en el sorteo. Solo tú lo verás.</p>`}
     ${bloques}
     ${form}
-    ${completo ? '<p class="nota">Ya quedó registrado. Si hay un error, avisa al organizador para corregirlo.</p>' : ''}`;
+    ${completo ? `<button type="button" class="btn btn-primario btn-bloque mt-btn" data-accion="tab" data-tab="deseos">${verDeseos} ${ICO.flecha}</button>
+      <p class="nota centro">Si hay un error, avisa al organizador para corregirlo.</p>` : ''}`;
+}
+
+/* ---------- Pestaña: mi lista ---------- */
+
+function prepararFotos() {
+  const r = miLista().regalos || [];
+  fotos = Array.from({ length: N }, (_, i) => (imagenSegura(r[i]?.imagen) ? r[i].imagen : ''));
 }
 
 function pintarLista(forzar = false) {
   const sec = document.getElementById('sec-lista');
   const lista = miLista();
+  const de = esMenor() ? `de ${esc(persona.nombre)}` : '';
   if (editando) {
     if (forzar || !sec.querySelector('#form-lista')) sec.innerHTML = htmlFormLista(lista);
-  } else {
-    sec.innerHTML = `<h2 class="card-titulo"><span class="paso hecho">✓</span> ${esMenor() ? `Lista de deseos de ${esc(persona.nombre)}` : 'Tu lista de deseos'}</h2>
-      <p class="nota">Esto es lo que verá quien ${esMenor() ? 'le' : 'te'} regala.</p>
-      ${htmlRegalos(lista.regalos)}
-      <button class="btn btn-secundario btn-bloque" type="button" data-accion="editar-lista">Editar lista</button>`;
+    return;
   }
+  sec.innerHTML = `<div class="sec-cab">
+      <div>
+        <h2 class="card-titulo"><span class="paso hecho">✓</span> Lista de deseos ${de}</h2>
+        <p class="nota">Esto es lo que verá quien ${esMenor() ? 'le' : 'te'} regala.</p>
+      </div>
+      <button class="btn btn-secundario" type="button" data-accion="editar-lista">${ICO.editar}<span>Editar</span></button>
+    </div>
+    ${htmlTarjetasRegalos(lista.regalos)}`;
+}
+
+function htmlFoto(i) {
+  const src = fotos[i];
+  if (src) {
+    return `<div class="foto-prev">
+        <img src="${esc(src)}" alt="Foto de la opción ${i + 1}">
+        <button type="button" class="foto-quitar" data-accion="quitar-foto" data-i="${i}" aria-label="Quitar foto">${ICO.quitar}</button>
+      </div>
+      <label class="foto-cambiar">${ICO.camara}<span>Cambiar foto</span><input type="file" accept="image/*" data-foto="${i}" hidden></label>`;
+  }
+  return `<label class="foto-drop">${ICO.camara}
+      <span><b>Agregar foto</b><small>Opcional · ayuda a acertar</small></span>
+      <input type="file" accept="image/*" data-foto="${i}" hidden>
+    </label>`;
 }
 
 function htmlFormLista(lista) {
   const r = lista.regalos || [];
+  const le = esMenor() ? 'le' : 'te';
   let items = '';
   for (let i = 0; i < N; i++) {
     const g = r[i] || {};
     items += `<fieldset class="regalo-form">
       <legend><span class="regalo-num">${i + 1}</span> Opción ${i + 1}</legend>
-      <label class="campo c-nombre"><span>Regalo *</span>
-        <input name="nombre-${i}" maxlength="80" value="${esc(g.nombre || '')}" placeholder="${EJEMPLOS[i] || 'Ej.: Taza personalizada'}">
-      </label>
-      <label class="campo c-precio"><span>Precio (${esc(ajustes.moneda)}) *</span>
-        <input name="precio-${i}" type="number" inputmode="decimal" min="${MIN}" step="0.10" value="${esc(g.precio ?? '')}" placeholder="Mín. ${MIN}">
-      </label>
-      <label class="campo c-donde"><span>Dónde <small>(opcional)</small></span>
-        <input name="donde-${i}" maxlength="300" value="${esc(g.donde || '')}" placeholder="Tienda o link">
-      </label>
-      <label class="campo c-detalle"><span>Detalles <small>(opcional)</small></span>
-        <input name="detalle-${i}" maxlength="160" value="${esc(g.detalle || '')}" placeholder="Talla, color, modelo">
-      </label>
+      <div class="rf-grid">
+        <div class="rf-foto" id="foto-box-${i}">${htmlFoto(i)}</div>
+        <div class="rf-campos">
+          <label class="campo c-nombre"><span>¿Qué regalo ${le} gustaría? *</span>
+            <input name="nombre-${i}" maxlength="80" value="${esc(g.nombre || '')}" placeholder="${EJEMPLOS[i] || 'Ej.: Taza personalizada'}">
+          </label>
+          <label class="campo c-precio"><span>Precio aprox. (${esc(ajustes.moneda)}) *</span>
+            <input name="precio-${i}" type="number" inputmode="decimal" min="${MIN}" step="0.10" value="${esc(g.precio ?? '')}" placeholder="Mínimo ${MIN}">
+          </label>
+          <label class="campo c-donde"><span>¿Dónde lo encuentran? <small>(opcional)</small></span>
+            <input name="donde-${i}" maxlength="300" value="${esc(g.donde || '')}" placeholder="Nombre de la tienda o link de la web">
+          </label>
+          <label class="campo c-detalle"><span>Detalles <small>(opcional)</small></span>
+            <textarea name="detalle-${i}" rows="3" maxlength="300" placeholder="Talla, color, modelo, marca, sabor… todo lo que ayude a acertar">${esc(g.detalle || '')}</textarea>
+          </label>
+        </div>
+      </div>
     </fieldset>`;
   }
-  return `<h2 class="card-titulo"><span class="paso">3</span> ${esMenor() ? `Lista de deseos de ${esc(persona.nombre)}` : 'Tu lista de deseos'}</h2>
-    <p class="nota">Escribe <b>${N} opciones</b> que ${esMenor() ? 'le' : 'te'} gustaría recibir. Cada una debe costar al menos <b>${dinero(MIN)}</b>. Así quien regala puede elegir.</p>
+  return `<div class="sec-cab">
+      <div>
+        <h2 class="card-titulo"><span class="paso">2</span> Lista de deseos ${esMenor() ? `de ${esc(persona.nombre)}` : ''}</h2>
+        <p class="nota">Escribe <b>${N} opciones</b> que ${le} gustaría recibir, de <b>${dinero(MIN)}</b> a más. Así quien regala puede elegir.</p>
+      </div>
+    </div>
     <form id="form-lista" class="pila" novalidate>
       ${items}
-      <div class="acciones">
+      <div class="acciones acciones-fijas">
         ${listaCompleta(lista) ? '<button type="button" class="btn btn-secundario" data-accion="cancelar-edicion">Cancelar</button>' : ''}
         <button class="btn btn-primario" type="submit">Guardar lista</button>
       </div>
     </form>`;
 }
 
-function htmlDeseos() {
+/* ---------- Pestaña: lo que desea ---------- */
+
+function pintarDeseos() {
+  const sec = document.getElementById('sec-deseos');
   const amigos = misAmigos();
-  const titulo = (txt) => `<h2 class="card-titulo"><span class="paso">4</span> ${txt}</h2>`;
-  if (cupo() === 0) return `${titulo('Lo que desea tu amigo secreto')}<p class="vacio">No aplica en tu caso.</p>`;
-  if (!amigos.length) {
-    return `${titulo('Lo que desea tu amigo secreto')}
-      <p class="vacio">Primero indica a quién ${esMenor() ? 'le' : 'te'} tocó (paso 2).</p>`;
+  const titulo = (txt) => `<h2 class="card-titulo"><span class="paso">3</span> ${txt}</h2>`;
+  if (cupo() === 0) {
+    sec.innerHTML = `${titulo('Lo que desea tu amigo secreto')}<p class="vacio">No aplica en tu caso.</p>`;
+    return;
   }
-  const bloques = amigos.map((a) => (a.regalos?.length
-    ? `${amigos.length > 1 ? `<h3 class="sub-titulo">${esc(a.nombre)}</h3>` : ''}${htmlRegalos(a.regalos)}`
-    : `${amigos.length > 1 ? `<h3 class="sub-titulo">${esc(a.nombre)}</h3>` : ''}
-       <p class="vacio">${esc(a.nombre)} todavía no escribe su lista. Esta página se actualiza sola: vuelve más tarde con tu link.</p>`)).join('');
+  if (!amigos.length) {
+    sec.innerHTML = `${titulo('Lo que desea tu amigo secreto')}
+      <div class="vacio vacio-accion">
+        <p>Primero indica a quién ${esMenor() ? 'le' : 'te'} tocó.</p>
+        <button type="button" class="btn btn-primario" data-accion="tab" data-tab="amigo">Elegir amigo secreto</button>
+      </div>`;
+    return;
+  }
   const nombre = amigos.length === 1 ? esc(amigos[0].nombre) : 'tus amigos secretos';
-  return `${titulo(`Lo que desea ${nombre}`)}
+  const bloques = amigos.map((a) => {
+    const cab = amigos.length > 1 ? `<h3 class="sub-titulo">${esc(a.nombre)}</h3>` : '';
+    if (!a.regalos?.length) {
+      return `${cab}<p class="vacio">${esc(a.nombre)} todavía no escribe su lista. Esta página se actualiza sola: vuelve más tarde con tu link.</p>`;
+    }
+    return `${cab}${htmlTarjetasRegalos(a.regalos)}`;
+  }).join('');
+  sec.innerHTML = `${titulo(`Lo que desea ${nombre}`)}
     <p class="nota">Elige una de estas opciones. ¡Recuerda que es secreto!</p>
     ${bloques}`;
 }
 
-function mostrarError(err) {
-  console.error(err);
-  app.dataset.vista = 'error';
-  app.innerHTML = `<section class="card"><h2 class="card-titulo">No se pudo cargar</h2>
-    <p class="nota">Revisa tu conexión a internet y recarga la página.</p></section>`;
-}
-
 /* ---------- Eventos ---------- */
 
-app.addEventListener('change', (e) => {
-  if (e.target.id === 'sel-amigo') amigoElegido = e.target.value;
+app.addEventListener('change', async (e) => {
+  const el = e.target;
+  if (el.id === 'sel-amigo') amigoElegido = el.value;
+  if (el.dataset.foto !== undefined) {
+    const i = Number(el.dataset.foto);
+    const file = el.files?.[0];
+    if (!file) return;
+    const box = document.getElementById(`foto-box-${i}`);
+    box.classList.add('cargando-foto');
+    try {
+      fotos[i] = await comprimirImagen(file);
+      box.innerHTML = htmlFoto(i);
+    } catch (err) {
+      console.error(err);
+      toast('No se pudo usar esa imagen. Prueba con otra foto.', 'error');
+    } finally {
+      box.classList.remove('cargando-foto');
+    }
+  }
 });
 
 app.addEventListener('click', async (e) => {
   const b = e.target.closest('[data-accion]');
   if (!b) return;
   switch (b.dataset.accion) {
+    case 'tab':
+      irA(b.dataset.tab);
+      break;
     case 'copiar-link':
       copiar(linkPersonal(clave));
       break;
+    case 'quitar-foto': {
+      const i = Number(b.dataset.i);
+      fotos[i] = '';
+      document.getElementById(`foto-box-${i}`).innerHTML = htmlFoto(i);
+      break;
+    }
     case 'salir':
       if (await confirmar({
         titulo: '¿Salir en este celular?',
@@ -309,8 +444,8 @@ app.addEventListener('click', async (e) => {
       break;
     case 'editar-lista':
       editando = true;
+      prepararFotos();
       pintarLista(true);
-      document.getElementById('sec-lista').scrollIntoView({ behavior: 'smooth', block: 'start' });
       break;
     case 'cancelar-edicion':
       editando = false;
@@ -361,6 +496,7 @@ async function elegirAmigo(btn) {
   btn.blur();
   celebrar();
   toast('¡Listo! Quedó registrado.');
+  if (amigoCompleto() && !listaCompleta(miLista())) setTimeout(() => irA('lista'), 1600);
 }
 
 async function guardarLista(f, btn) {
@@ -388,6 +524,7 @@ async function guardarLista(f, btn) {
       precio: Math.round(valor * 100) / 100,
       donde: f[`donde-${i}`].value.trim(),
       detalle: f[`detalle-${i}`].value.trim(),
+      imagen: fotos[i] || '',
     });
   }
 
@@ -406,7 +543,7 @@ async function guardarLista(f, btn) {
   ]);
   editando = false;
   pintarLista(true);
-  document.getElementById('sec-lista').scrollIntoView({ behavior: 'smooth', block: 'start' });
   celebrar();
   toast('¡La lista quedó guardada!');
+  if (cupo() > 0) setTimeout(() => irA(amigoCompleto() ? 'deseos' : 'amigo'), 1600);
 }
