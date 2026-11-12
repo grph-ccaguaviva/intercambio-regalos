@@ -190,6 +190,7 @@ function pintarDashboard() {
       <h2 class="card-titulo">Links por enviar</h2>
       <span class="nota">${porEnviar.length ? `${porEnviar.length} aún no abren su link` : ''}</span>
     </div>
+    ${porEnviar.length < personas.length ? `<button type="button" class="enlace-sec" data-accion="reiniciar-vistos">Reiniciar contador de "Abrieron su link"</button>` : ''}
     ${porEnviar.length ? `<ul class="envios">${porEnviar.map((p) => `<li class="envio">
         <button type="button" class="envio-nombre" data-accion="detalle" data-id="${esc(p.id)}">
           <span class="avatar avatar-chico" aria-hidden="true">${esc(iniciales(p.nombre))}</span>
@@ -710,6 +711,18 @@ raiz.addEventListener('click', async (e) => {
       const ahora = Date.now();
       await ejecutar(sinSexoConocido().map(({ p: x, sexo }) =>
         ({ tipo: 'update', col: 'personas', id: x.id, datos: { sexo, actualizado: ahora } })), 'Listo: separados por mujeres y hombres');
+      break;
+    }
+    case 'reiniciar-vistos': {
+      const abiertos = personas.filter((x) => x.visto);
+      const ok = await confirmar({
+        titulo: '¿Reiniciar el contador?',
+        texto: `${abiertos.length} participantes figuran con su link abierto. Quedarán como "Sin abrir" hasta que cada uno lo abra de nuevo. No se borra nada más.`,
+        aceptar: 'Reiniciar',
+      });
+      if (!ok) break;
+      const ahora = Date.now();
+      await ejecutar(abiertos.map((x) => ({ tipo: 'update', col: 'personas', id: x.id, datos: { visto: false, actualizado: ahora } })), 'Contador reiniciado');
       break;
     }
     case 'copiar':

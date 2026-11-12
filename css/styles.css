@@ -1093,3 +1093,4 @@ main > .nav-admin { animation: none; }
   .dialogo-mensaje .dialogo-acciones { margin-top: 12px; gap: 8px; }
   .dialogo-mensaje .dialogo-acciones .btn { min-height: 44px; padding-block: 8px; }
 }
+button.enlace-sec { background: none; border: 0; padding: 4px 0; margin-bottom: 8px; font-family: inherit; text-decoration: underline; cursor: pointer; }
