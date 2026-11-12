@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#1f5f42">
+  <meta name="theme-color" content="#004d74">
   <meta name="robots" content="noindex">
   <title>Organizador · Intercambio</title>
   <link rel="icon" href="assets/icono-aguaviva.png" type="image/png">
@@ -22,10 +22,26 @@
     </div>
   </header>
   <section class="hero hero-compacto">
-    <div class="contenedor">
-      <p class="hero-pre">Panel del organizador</p>
-      <h1 data-evento>Intercambio de Regalos</h1>
+    <div class="burbujas" aria-hidden="true">
+      <span style="--x:10%;--s:12px;--t:9s;--d:-2s"></span>
+      <span style="--x:30%;--s:8px;--t:7s;--d:-5s"></span>
+      <span style="--x:55%;--s:16px;--t:11s;--d:-8s"></span>
+      <span style="--x:78%;--s:10px;--t:8s;--d:-3s"></span>
+      <span style="--x:90%;--s:14px;--t:10s;--d:-6s"></span>
     </div>
+    <div class="contenedor hero-contenido">
+      <p class="hero-pre entrar">Panel del organizador</p>
+      <h1 class="entrar" style="--d:.1s" data-evento>Intercambio de Regalos</h1>
+    </div>
+    <svg class="olas" viewBox="0 24 150 28" preserveAspectRatio="none" aria-hidden="true">
+      <defs><path id="ola" d="M-160 44c30 0 58-18 88-18s58 18 88 18 58-18 88-18 58 18 88 18v44h-352z"/></defs>
+      <g class="paralax">
+        <use href="#ola" x="48" y="0" fill="rgba(255,255,255,.12)"/>
+        <use href="#ola" x="48" y="3" fill="rgba(255,255,255,.18)"/>
+        <use href="#ola" x="48" y="5" fill="rgba(255,255,255,.28)"/>
+        <use href="#ola" x="48" y="7" class="ola-fondo"/>
+      </g>
+    </svg>
   </section>
 
   <div id="aviso-demo" class="aviso" hidden>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#1f5f42">
+  <meta name="theme-color" content="#004d74">
   <meta name="description" content="Registra a tu amigo secreto y escribe tus opciones de regalo.">
   <title>Intercambio de Regalos</title>
   <link rel="icon" href="assets/icono-aguaviva.png" type="image/png">
@@ -23,12 +23,32 @@
     </div>
   </header>
   <section class="hero">
-    <div class="contenedor">
-      <svg class="hero-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg>
-      <p class="hero-pre" data-subtitulo>Navidad</p>
-      <h1 data-evento>Intercambio de Regalos</h1>
-      <p class="hero-sub" id="hero-sub"></p>
+    <div class="burbujas" aria-hidden="true">
+      <span style="--x:6%;--s:14px;--t:11s;--d:-1s"></span>
+      <span style="--x:16%;--s:8px;--t:8s;--d:-5s"></span>
+      <span style="--x:27%;--s:20px;--t:13s;--d:-8s"></span>
+      <span style="--x:38%;--s:10px;--t:9s;--d:-3s"></span>
+      <span style="--x:52%;--s:16px;--t:12s;--d:-10s"></span>
+      <span style="--x:63%;--s:7px;--t:7s;--d:-2s"></span>
+      <span style="--x:72%;--s:22px;--t:14s;--d:-6s"></span>
+      <span style="--x:83%;--s:11px;--t:9s;--d:-7s"></span>
+      <span style="--x:92%;--s:15px;--t:12s;--d:-4s"></span>
     </div>
+    <div class="contenedor hero-contenido">
+      <svg class="hero-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg>
+      <p class="hero-pre entrar" style="--d:.1s" data-subtitulo>Navidad</p>
+      <h1 class="entrar" style="--d:.2s" data-evento>Intercambio de Regalos</h1>
+      <p class="hero-sub entrar" style="--d:.35s" id="hero-sub"></p>
+    </div>
+    <svg class="olas" viewBox="0 24 150 28" preserveAspectRatio="none" aria-hidden="true">
+      <defs><path id="ola" d="M-160 44c30 0 58-18 88-18s58 18 88 18 58-18 88-18 58 18 88 18v44h-352z"/></defs>
+      <g class="paralax">
+        <use href="#ola" x="48" y="0" fill="rgba(255,255,255,.12)"/>
+        <use href="#ola" x="48" y="3" fill="rgba(255,255,255,.18)"/>
+        <use href="#ola" x="48" y="5" fill="rgba(255,255,255,.28)"/>
+        <use href="#ola" x="48" y="7" class="ola-fondo"/>
+      </g>
+    </svg>
   </section>
 
   <div id="aviso-demo" class="aviso" hidden>

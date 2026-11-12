@@ -2,7 +2,35 @@ import { ajustes } from './config.js';
 
 export const ICONO_REGALO = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg>`;
 
-const ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+export const ICONO_WA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.7-.4Z"/></svg>';
+
+// Confeti con los colores de Agua Viva. Se omite si el usuario pidió reducir movimiento.
+export function celebrar() {
+  if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+  const colores = ['#f39200', '#00b5cf', '#2a9d8c', '#004d74', '#ffc857', '#ffffff'];
+  const capa = document.createElement('div');
+  capa.className = 'confeti';
+  capa.setAttribute('aria-hidden', 'true');
+  document.body.append(capa);
+  for (let i = 0; i < 90; i++) {
+    const c = document.createElement('i');
+    c.style.background = colores[i % colores.length];
+    if (i % 3 === 0) c.style.borderRadius = '50%';
+    capa.append(c);
+    const ang = -Math.PI / 2 + (Math.random() - 0.5) * 1.9;
+    const dist = 180 + Math.random() * 340;
+    const dx = Math.cos(ang) * dist;
+    const dy = Math.sin(ang) * dist;
+    c.animate([
+      { transform: 'translate(0, 0) rotate(0deg)', opacity: 1 },
+      { transform: `translate(${dx}px, ${dy}px) rotate(${Math.random() * 540}deg)`, opacity: 1, offset: 0.55 },
+      { transform: `translate(${dx * 1.15}px, ${dy + 420}px) rotate(${Math.random() * 1080}deg)`, opacity: 0 },
+    ], { duration: 1700 + Math.random() * 900, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' });
+  }
+  setTimeout(() => capa.remove(), 2900);
+}
+
+const ESCAPES ={ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 export const esc = (s = '') => String(s ?? '').replace(/[&<>"']/g, (c) => ESCAPES[c]);
 
 export const normalizar = (s = '') =>

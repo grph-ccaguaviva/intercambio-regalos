@@ -2,8 +2,12 @@ import api, { modoDemo } from './db.js';
 import { ajustes, grupos } from './config.js';
 import {
   esc, linkPersonal, copiar, toast, waUrl, dinero, confirmar, cargando, listaCompleta,
-  htmlRegalos, ICONO_REGALO, aplicarMarca, ordenarPorNombre,
+  htmlRegalos, ICONO_REGALO, ICONO_WA, aplicarMarca, ordenarPorNombre, celebrar,
 } from './util.js';
+
+const ICONO_LINK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>';
+const ICONO_CANDADO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+const revelados = new Set();
 
 const KEY_CLAVE = 'intercambio-clave';
 const N = ajustes.cantidadRegalos;
@@ -46,8 +50,8 @@ if (clave) {
 
 /* ---------- Render ---------- */
 
-function tutorialHtml(abierto) {
-  return `<details class="card tutorial" ${abierto ? 'open' : ''}>
+function tutorialHtml(abierto, clase = '') {
+  return `<details class="card tutorial ${clase}" ${abierto ? 'open' : ''}>
     <summary><h2 class="card-titulo">¿Cómo funciona?</h2></summary>
     <ol class="pasos-tuto">
       <li><div><b>Abre tu link personal</b>El organizador te lo envía por WhatsApp. Es solo tuyo: no lo compartas.</div></li>
@@ -58,14 +62,26 @@ function tutorialHtml(abierto) {
   </details>`;
 }
 
+function tarjetaAcceso(titulo, texto) {
+  return `<section class="card bienvenida-card">
+    <div class="icono-circulo" aria-hidden="true">${ICONO_LINK}</div>
+    <h2 class="card-titulo">${titulo}</h2>
+    <p class="nota">${texto}</p>
+    <ul class="claves">
+      <li><span class="clave-ico ico-wa">${ICONO_WA}</span><span><b>Te llega por WhatsApp</b>El organizador te lo envía.</span></li>
+      <li><span class="clave-ico">${ICONO_CANDADO}</span><span><b>Es solo tuyo</b>No lo compartas con nadie.</span></li>
+      <li><span class="clave-ico ico-regalo">${ICONO_REGALO}</span><span><b>Sin contraseñas</b>Abres el link y listo.</span></li>
+    </ul>
+  </section>`;
+}
+
 function renderSinLink() {
   app.dataset.vista = 'sin-link';
-  app.innerHTML = `
-    <section class="card">
-      <h2 class="card-titulo">Necesitas tu link personal</h2>
-      <p class="nota">Para que nadie vea a quién le tocó a otro, cada participante entra con un link secreto. Pídeselo al organizador por WhatsApp y ábrelo desde tu celular.</p>
-    </section>
-    ${tutorialHtml(true)}`;
+  app.classList.add('app-ancho');
+  app.innerHTML = `<div class="duo">
+    ${tarjetaAcceso('Necesitas tu link personal', 'Para que nadie vea a quién le tocó a otro, cada participante entra con un link secreto. Pídeselo al organizador y ábrelo desde tu celular.')}
+    ${tutorialHtml(true)}
+  </div>`;
 }
 
 function render() {
@@ -73,10 +89,11 @@ function render() {
   if (persona === null) {
     if (!vistaAdmin) guardarClave(null);
     app.dataset.vista = 'invalido';
-    app.innerHTML = `<section class="card">
-      <h2 class="card-titulo">Este link no es válido</h2>
-      <p class="nota">Puede que esté incompleto o que el organizador lo haya cambiado. Pídele tu link actual.</p>
-    </section>${tutorialHtml(true)}`;
+    app.classList.add('app-ancho');
+    app.innerHTML = `<div class="duo">
+      ${tarjetaAcceso('Este link no es válido', 'Puede que esté incompleto o que el organizador lo haya cambiado. Pídele tu link actual.')}
+      ${tutorialHtml(true)}
+    </div>`;
     return;
   }
   if (!vistaAdmin) {
@@ -102,30 +119,39 @@ function renderPanel() {
     editando = !listaCompleta(miLista());
     const link = linkPersonal(clave);
     const msg = `Mi link para el ${ajustes.evento} (es personal, no lo compartas): ${link}`;
+    app.classList.add('app-ancho');
     app.innerHTML = `
       ${vistaAdmin ? '<p class="aviso aviso-card">Estás viendo esta página como organizador. Los cambios se guardan a nombre de esta persona.</p>' : ''}
-      <section class="card saludo">
-        <div>
-          <p class="saludo-pre">${esMenor() ? 'Página de' : 'Hola,'}</p>
-          <h2 id="mi-nombre"></h2>
-          <p class="nota" id="mi-grupo"></p>
+      <div class="panel-grid">
+        <div class="col-izq">
+          <section class="card saludo o-1">
+            <div class="saludo-fila">
+              <div class="saludo-textos">
+                <p class="saludo-pre">${esMenor() ? 'Página de' : 'Hola,'}</p>
+                <h2 id="mi-nombre"></h2>
+                <p class="nota" id="mi-grupo"></p>
+              </div>
+              ${vistaAdmin ? '' : '<button class="btn-link" type="button" data-accion="salir">Salir</button>'}
+            </div>
+            <div class="progreso" id="progreso"></div>
+          </section>
+          <section class="card o-2" id="sec-amigo"></section>
+          <section class="card card-link o-5">
+            <h2 class="card-titulo">Tu link personal</h2>
+            <p class="nota">Es tu llave para volver desde cualquier celular. <b>No lo compartas.</b></p>
+            <div class="link-box">
+              <input readonly value="${esc(link)}" aria-label="Tu link personal">
+              <button class="btn btn-secundario" type="button" data-accion="copiar-link">Copiar</button>
+              <a class="btn-icono btn-icono-wa" href="${esc(waUrl(msg))}" target="_blank" rel="noopener" title="Guardármelo en WhatsApp" aria-label="Guardármelo en WhatsApp">${ICONO_WA}</a>
+            </div>
+          </section>
+          ${tutorialHtml(false, 'o-6')}
         </div>
-        ${vistaAdmin ? '' : '<button class="btn-link" type="button" data-accion="salir">Salir</button>'}
-      </section>
-      <div class="progreso" id="progreso"></div>
-      <section class="card card-link">
-        <h2 class="card-titulo">Tu link personal</h2>
-        <p class="nota">Es tu llave: con este link vuelves a tu página desde cualquier celular. <b>No lo compartas</b>, quien lo tenga puede ver a quién le regalas.</p>
-        <div class="link-box">
-          <input readonly value="${esc(link)}" aria-label="Tu link personal">
-          <button class="btn btn-secundario" type="button" data-accion="copiar-link">Copiar</button>
+        <div class="col-der">
+          <section class="card o-3" id="sec-lista"></section>
+          <section class="card card-destacada o-4" id="sec-deseos"></section>
         </div>
-        <a class="btn btn-wa" href="${esc(waUrl(msg))}" target="_blank" rel="noopener">Guardármelo en WhatsApp</a>
-      </section>
-      <section class="card" id="sec-amigo"></section>
-      <section class="card" id="sec-lista"></section>
-      <section class="card card-destacada" id="sec-deseos"></section>
-      ${tutorialHtml(false)}`;
+      </div>`;
   }
 
   document.getElementById('mi-nombre').textContent = persona.nombre;
@@ -162,7 +188,8 @@ function pintarAmigo(forzar = false) {
   const completo = amigos.length >= total;
   const titulo = total > 1 ? `Tus amigos secretos (${amigos.length}/${total})` : 'Tu amigo secreto';
   const bloques = amigos.map((a) =>
-    `<div class="amigo">${ICONO_REGALO}<p class="amigo-nombre">${esc(a.nombre)}</p></div>`).join('');
+    `<div class="amigo ${revelados.has(a.id) ? '' : 'revelar'}">${ICONO_REGALO}<div><span class="amigo-etq">${esMenor() ? 'Le regala a' : 'Le regalas a'}</span><p class="amigo-nombre">${esc(a.nombre)}</p></div></div>`).join('');
+  amigos.forEach((a) => revelados.add(a.id));
 
   let form = '';
   if (!completo) {
@@ -206,18 +233,18 @@ function htmlFormLista(lista) {
   for (let i = 0; i < N; i++) {
     const g = r[i] || {};
     items += `<fieldset class="regalo-form">
-      <legend>Opción ${i + 1}</legend>
-      <label class="campo"><span>¿Qué regalo ${esMenor() ? 'le' : 'te'} gustaría? *</span>
+      <legend><span class="regalo-num">${i + 1}</span> Opción ${i + 1}</legend>
+      <label class="campo c-nombre"><span>Regalo *</span>
         <input name="nombre-${i}" maxlength="80" value="${esc(g.nombre || '')}" placeholder="${EJEMPLOS[i] || 'Ej.: Taza personalizada'}">
       </label>
-      <label class="campo"><span>Precio aproximado (${esc(ajustes.moneda)}) *</span>
-        <input name="precio-${i}" type="number" inputmode="decimal" min="${MIN}" step="0.10" value="${esc(g.precio ?? '')}" placeholder="Mínimo ${MIN}">
+      <label class="campo c-precio"><span>Precio (${esc(ajustes.moneda)}) *</span>
+        <input name="precio-${i}" type="number" inputmode="decimal" min="${MIN}" step="0.10" value="${esc(g.precio ?? '')}" placeholder="Mín. ${MIN}">
       </label>
-      <label class="campo"><span>¿Dónde lo encuentran? <small>(opcional)</small></span>
-        <input name="donde-${i}" maxlength="300" value="${esc(g.donde || '')}" placeholder="Tienda o link de la web">
+      <label class="campo c-donde"><span>Dónde <small>(opcional)</small></span>
+        <input name="donde-${i}" maxlength="300" value="${esc(g.donde || '')}" placeholder="Tienda o link">
       </label>
-      <label class="campo"><span>Detalles <small>(talla, color, modelo, opcional)</small></span>
-        <textarea name="detalle-${i}" rows="2" maxlength="160">${esc(g.detalle || '')}</textarea>
+      <label class="campo c-detalle"><span>Detalles <small>(opcional)</small></span>
+        <input name="detalle-${i}" maxlength="160" value="${esc(g.detalle || '')}" placeholder="Talla, color, modelo">
       </label>
     </fieldset>`;
   }
@@ -332,6 +359,7 @@ async function elegirAmigo(btn) {
   ]);
   amigoElegido = '';
   btn.blur();
+  celebrar();
   toast('¡Listo! Quedó registrado.');
 }
 
@@ -379,5 +407,6 @@ async function guardarLista(f, btn) {
   editando = false;
   pintarLista(true);
   document.getElementById('sec-lista').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  celebrar();
   toast('¡La lista quedó guardada!');
 }

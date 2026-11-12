@@ -499,6 +499,233 @@ body:has(dialog[open]) { overflow: hidden; }
 .dialogo-cab h3 { margin: 0; }
 .dialogo-form .btn-icono { width: 38px; height: 38px; }
 
+/* =========================================================
+   Vida y movimiento (estilo Agua Viva) + layout adaptable
+   ========================================================= */
+
+/* Hero con agua: luces a la deriva, burbujas y olas */
+.hero { position: relative; overflow: hidden; isolation: isolate; padding: 30px 0 92px; }
+.hero-compacto { padding: 22px 0 78px; }
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 28% 32%, rgba(0, 181, 207, .38), transparent 38%),
+    radial-gradient(circle at 74% 62%, rgba(66, 181, 164, .32), transparent 42%),
+    radial-gradient(circle at 55% 15%, rgba(243, 146, 0, .14), transparent 30%);
+  animation: deriva 16s ease-in-out infinite alternate;
+}
+@keyframes deriva { to { transform: translate3d(7%, -5%, 0) rotate(10deg); } }
+.hero-contenido { position: relative; z-index: 2; }
+
+.olas { position: absolute; left: 0; bottom: -1px; z-index: 1; width: 100%; height: clamp(46px, 8vw, 86px); }
+.paralax > use { animation: mover 25s cubic-bezier(.55, .5, .45, .5) infinite; }
+.paralax > use:nth-child(1) { animation-delay: -2s; animation-duration: 7s; }
+.paralax > use:nth-child(2) { animation-delay: -3s; animation-duration: 10s; }
+.paralax > use:nth-child(3) { animation-delay: -4s; animation-duration: 13s; }
+.paralax > use:nth-child(4) { animation-delay: -5s; animation-duration: 20s; }
+.ola-fondo { fill: var(--bg); }
+@keyframes mover {
+  0% { transform: translate3d(-90px, 0, 0); }
+  100% { transform: translate3d(85px, 0, 0); }
+}
+
+.burbujas { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.burbujas span {
+  position: absolute;
+  bottom: -30px;
+  left: var(--x);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, .6), rgba(255, 255, 255, .08) 62%);
+  border: 1px solid rgba(255, 255, 255, .28);
+  opacity: 0;
+  animation: burbuja var(--t) linear infinite;
+  animation-delay: var(--d);
+}
+@keyframes burbuja {
+  0% { transform: translate(0, 0); opacity: 0; }
+  12% { opacity: .9; }
+  50% { transform: translate(14px, -240px); }
+  100% { transform: translate(-10px, -520px); opacity: 0; }
+}
+
+/* Entradas */
+@keyframes aparecer { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes flotar { 50% { transform: translateY(-8px) rotate(-5deg); } }
+.entrar { animation: aparecer .8s cubic-bezier(.2, .8, .2, 1) both; animation-delay: var(--d, 0s); }
+.hero-icono {
+  width: 52px;
+  height: 52px;
+  filter: drop-shadow(0 8px 16px rgba(243, 146, 0, .5));
+  animation: aparecer .8s cubic-bezier(.2, .8, .2, 1) both, flotar 4s ease-in-out .9s infinite;
+}
+.hero h1 { text-shadow: 0 4px 24px rgba(0, 30, 50, .35); }
+
+main { margin-top: -30px; }
+main > *, .duo > *, .col-izq > *, .col-der > * { animation: aparecer .6s cubic-bezier(.2, .8, .2, 1) both; }
+.duo > :nth-child(2), .col-izq > :nth-child(2), .col-der > :nth-child(1) { animation-delay: .08s; }
+.col-izq > :nth-child(3), .col-der > :nth-child(2) { animation-delay: .16s; }
+.col-izq > :nth-child(4) { animation-delay: .24s; }
+
+/* Tarjetas y botones con más presencia */
+.card { transition: box-shadow .25s ease, transform .25s ease; }
+@media (hover: hover) {
+  .card:hover { box-shadow: 0 2px 4px rgba(37, 54, 69, .06), 0 16px 36px rgba(37, 54, 69, .10); }
+  .btn:hover { transform: translateY(-1px); }
+}
+.btn-primario {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--navy), #00739c);
+  box-shadow: 0 6px 18px rgba(0, 77, 116, .28);
+}
+.btn-primario:hover { background: linear-gradient(135deg, #003a58, #00668f); }
+.btn-primario::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .35) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform .7s ease;
+}
+.btn-primario:hover::after { transform: translateX(120%); }
+.toast { transition: opacity .3s, transform .45s cubic-bezier(.2, 1.4, .4, 1); }
+
+/* Tarjeta de acceso (sin link) */
+.bienvenida-card { text-align: center; display: grid; justify-items: center; gap: 6px; }
+.bienvenida-card .card-titulo { justify-content: center; margin-top: 6px; }
+.bienvenida-card > .nota { max-width: 46ch; }
+.icono-circulo {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(135deg, var(--navy), var(--cyan));
+  box-shadow: 0 10px 24px rgba(0, 120, 160, .35);
+}
+.icono-circulo svg { width: 30px; height: 30px; }
+.icono-circulo::before, .icono-circulo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--cyan);
+  animation: onda 2.6s ease-out infinite;
+}
+.icono-circulo::after { animation-delay: 1.3s; }
+@keyframes onda { from { transform: scale(1); opacity: .7; } to { transform: scale(1.8); opacity: 0; } }
+.claves { list-style: none; padding: 0; margin: 14px 0 0; width: 100%; display: grid; gap: 10px; text-align: left; }
+.claves li { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; background: var(--bg); border: 1px solid var(--line); }
+.claves b { display: block; color: var(--ink); font-size: .92rem; }
+.claves li > span:last-child { color: var(--muted); font-size: .86rem; line-height: 1.35; }
+.clave-ico { flex: none; width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: var(--green-soft); color: var(--green-700); }
+.clave-ico svg { width: 20px; height: 20px; }
+.clave-ico.ico-wa { background: #dff5e8; color: var(--wa); }
+.clave-ico.ico-regalo { background: var(--gold-soft); color: #c26f00; }
+@media (min-width: 560px) {
+  .claves { grid-template-columns: repeat(3, 1fr); }
+  .claves li { flex-direction: column; text-align: center; align-items: center; }
+}
+
+/* Tutorial como línea de tiempo */
+.pasos-tuto li { position: relative; }
+.pasos-tuto li::before { background: linear-gradient(135deg, var(--navy), var(--cyan)); color: #fff; box-shadow: 0 4px 10px rgba(0, 100, 140, .25); position: relative; z-index: 1; }
+.pasos-tuto li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 32px;
+  bottom: -14px;
+  width: 2px;
+  background: linear-gradient(var(--cyan), var(--line));
+}
+.tutorial[open] .pasos-tuto li { animation: aparecer .5s cubic-bezier(.2, .8, .2, 1) both; }
+.tutorial[open] .pasos-tuto li:nth-child(2) { animation-delay: .08s; }
+.tutorial[open] .pasos-tuto li:nth-child(3) { animation-delay: .16s; }
+.tutorial[open] .pasos-tuto li:nth-child(4) { animation-delay: .24s; }
+
+/* Revelación del amigo secreto */
+.amigo { position: relative; overflow: hidden; background: linear-gradient(135deg, #fff4e3, #ffe3bd); border: 1px solid #f6d3a1; }
+.amigo svg { color: #d97a00; animation: flotar 3.6s ease-in-out infinite; }
+.amigo-etq { display: block; font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #a35c00; }
+.amigo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, .75) 50%, transparent 65%);
+  transform: translateX(-100%);
+  animation: brillo 3.2s ease-in-out 1.2s infinite;
+}
+@keyframes brillo { 0% { transform: translateX(-100%); } 45%, 100% { transform: translateX(100%); } }
+.amigo.revelar { animation: revelar .8s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes revelar { 0% { opacity: 0; transform: perspective(600px) rotateX(55deg) scale(.85); } 100% { opacity: 1; transform: none; } }
+.amigo + .amigo { margin-top: 8px; }
+
+.regalos .regalo { animation: aparecer .45s cubic-bezier(.2, .8, .2, 1) both; }
+.regalos .regalo:nth-child(2) { animation-delay: .06s; }
+.regalos .regalo:nth-child(3) { animation-delay: .12s; }
+
+/* Confeti */
+.confeti { position: fixed; left: 50%; top: 55%; z-index: 60; width: 0; height: 0; pointer-events: none; }
+.confeti i { position: absolute; width: 8px; height: 12px; border-radius: 2px; }
+
+/* ---------- Layout: compacto en móvil, columnas en escritorio ---------- */
+.contenedor.app-ancho { max-width: 1120px; }
+.duo { display: grid; gap: 16px; }
+.panel-grid { display: grid; gap: 16px; }
+.col-izq, .col-der { display: contents; }
+.o-1 { order: 1; } .o-2 { order: 2; } .o-3 { order: 3; } .o-4 { order: 4; } .o-5 { order: 5; } .o-6 { order: 6; }
+
+.card.saludo { display: grid; gap: 12px; align-items: stretch; justify-content: stretch; }
+.saludo-fila { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; width: 100%; }
+.saludo-textos { min-width: 0; }
+.saludo .progreso { padding-top: 12px; border-top: 1px solid var(--line); }
+.link-box { margin: 10px 0 0; align-items: center; }
+.link-box .btn { min-height: 46px; padding: 10px 14px; }
+.link-box .btn-icono { width: 46px; height: 46px; }
+
+.regalo-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 10px 12px; }
+.regalo-form legend { display: flex; align-items: center; gap: 8px; color: var(--navy); }
+.regalo-form legend .regalo-num { width: 26px; height: 26px; border-radius: 8px; font-size: .8rem; }
+.c-nombre, .c-detalle { grid-column: 1 / -1; }
+.campo > span { font-size: .88rem; }
+
+@media (max-width: 640px) {
+  .hero { padding: 20px 0 66px; }
+  .hero-compacto { padding: 16px 0 60px; }
+  .hero-icono { width: 40px; height: 40px; }
+  .hero h1 { font-size: 1.6rem; margin: 8px 0 6px; }
+  .hero-sub { font-size: .86rem; }
+  .marca-barra { padding: 9px 12px; font-size: .7rem; }
+  main { gap: 12px; }
+  .panel-grid, .duo { gap: 12px; }
+  .card { padding: 16px; border-radius: 16px; }
+  .saludo h2 { font-size: 1.35rem; }
+  .regalo-form { padding: 12px; }
+  .regalos { gap: 8px; margin: 10px 0; }
+  .regalo { padding: 12px; }
+  input, select, textarea { min-height: 44px; padding: 10px 12px; }
+}
+
+@media (min-width: 900px) {
+  .duo { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  .panel-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: start; gap: 20px; }
+  .col-izq, .col-der { display: grid; gap: 20px; align-content: start; }
+  .col-izq { position: sticky; top: 16px; }
+  .hero { padding: 24px 0 84px; }
+  .hero .hero-contenido { max-width: 960px; }
+  .hero-sub { max-width: 60ch; }
+  .regalo-form { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+  .c-nombre, .c-detalle { grid-column: auto; }
+  .tutorial:not([open]) { padding: 16px 20px; }
+}
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
