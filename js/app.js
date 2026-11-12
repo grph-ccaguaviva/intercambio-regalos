@@ -20,6 +20,7 @@ const ICO = {
   lista: svg('<path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1 1 2-2M3.5 12l1 1 2-2M3.5 18l1 1 2-2"/>'),
   corazon: svg('<path d="M12 21s-7.5-4.6-9.5-9.2C1 8.4 3.2 4.5 7 4.5c2.1 0 3.6 1.2 5 3 1.4-1.8 2.9-3 5-3 3.8 0 6 3.9 4.5 7.3C19.5 16.4 12 21 12 21Z"/>'),
   camara: svg('<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13.5" r="3.5"/>'),
+  galeria: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-8 9"/>'),
   quitar: svg('<path d="M18 6 6 18M6 6l12 12"/>'),
   flecha: svg('<path d="M5 12h14M13 6l6 6-6 6"/>'),
   editar: svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>'),
@@ -305,6 +306,16 @@ function pintarLista(forzar = false) {
     ${htmlTarjetasRegalos(lista.regalos)}`;
 }
 
+// Dos entradas: galería (álbum del celular o archivo en PC) y cámara (solo en celulares).
+function botonesFoto(i, cambiar) {
+  return `<div class="foto-botones">
+      <label class="foto-btn">${ICO.galeria}<span class="solo-movil">${cambiar ? 'Otra de galería' : 'Galería'}</span><span class="solo-pc">${cambiar ? 'Cambiar foto' : 'Elegir foto'}</span>
+        <input type="file" accept="image/*" data-foto="${i}" hidden></label>
+      <label class="foto-btn solo-movil">${ICO.camara}<span>${cambiar ? 'Tomar otra' : 'Cámara'}</span>
+        <input type="file" accept="image/*" capture="environment" data-foto="${i}" hidden></label>
+    </div>`;
+}
+
 function htmlFoto(i) {
   const src = fotos[i];
   if (src) {
@@ -312,12 +323,13 @@ function htmlFoto(i) {
         <img src="${esc(src)}" alt="Foto de la opción ${i + 1}">
         <button type="button" class="foto-quitar" data-accion="quitar-foto" data-i="${i}" aria-label="Quitar foto">${ICO.quitar}</button>
       </div>
-      <label class="foto-cambiar">${ICO.camara}<span>Cambiar foto</span><input type="file" accept="image/*" data-foto="${i}" hidden></label>`;
+      ${botonesFoto(i, true)}`;
   }
-  return `<label class="foto-drop">${ICO.camara}
-      <span><b>Agregar foto</b><small>Opcional · ayuda a acertar</small></span>
-      <input type="file" accept="image/*" data-foto="${i}" hidden>
-    </label>`;
+  return `<div class="foto-drop">
+      <span class="foto-ico">${ICO.camara}</span>
+      <span class="foto-txt"><b>Agregar foto</b><small>Opcional · ayuda a acertar</small></span>
+      ${botonesFoto(i, false)}
+    </div>`;
 }
 
 function htmlFormLista(lista) {

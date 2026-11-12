@@ -953,8 +953,38 @@ main > .nav-admin { animation: none; }
 .foto-prev img { display: block; width: 100%; height: 170px; object-fit: cover; border-radius: 14px; border: 1px solid var(--line); }
 .foto-quitar { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(20, 30, 40, .65); color: #fff; cursor: pointer; }
 .foto-quitar svg { width: 18px; height: 18px; }
-.foto-cambiar { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; color: var(--navy); font-weight: 700; font-size: .85rem; cursor: pointer; }
-.foto-cambiar svg { width: 16px; height: 16px; }
+.foto-drop { flex-wrap: wrap; cursor: default; }
+.foto-ico { display: flex; }
+.foto-txt { flex: 1; min-width: 0; }
+.foto-botones { display: flex; gap: 8px; width: 100%; }
+.foto-prev + .foto-botones { margin-top: 8px; }
+.foto-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1.5px solid #cfdbe4;
+  background: #fff;
+  color: var(--navy);
+  font-weight: 700;
+  font-size: .86rem;
+  cursor: pointer;
+  transition: border-color .15s, background-color .15s;
+}
+.foto-btn:hover { border-color: var(--cyan); background: #f6fbfd; }
+.foto-btn:focus-within { outline: 3px solid var(--gold); outline-offset: 2px; }
+.foto-btn svg { width: 18px; height: 18px; color: var(--cyan); }
+.foto-drop .foto-btn svg { width: 18px; height: 18px; }
+/* Cámara solo en dispositivos táctiles; en PC un único botón "Elegir foto" */
+.solo-pc { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .solo-movil { display: none; }
+  .solo-pc { display: inline; }
+}
 
 /* Tarjetas de regalos (mi lista y lo que desea el amigo) */
 .deseos-grid { display: grid; gap: 14px; margin-top: 12px; }
@@ -1000,7 +1030,9 @@ main > .nav-admin { animation: none; }
   .rf-grid { grid-template-columns: 210px minmax(0, 1fr); gap: 18px; }
   .rf-foto { display: flex; flex-direction: column; }
   .rf-foto .foto-drop { flex: 1; flex-direction: column; justify-content: center; text-align: center; min-height: 210px; }
-  .rf-foto .foto-drop svg { width: 40px; height: 40px; }
+  .rf-foto .foto-ico svg { width: 40px; height: 40px; }
+  .rf-foto .foto-txt { flex: none; }
+  .rf-foto .foto-botones { flex-direction: column; }
   .foto-prev img { height: 210px; }
   .nav-part { position: sticky; top: 10px; z-index: 20; }
 }
