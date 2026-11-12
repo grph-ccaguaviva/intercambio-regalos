@@ -15,6 +15,12 @@ let filtro = '';
 let iniciado = false;
 let detalleId = null;
 let grupoActivo = leerTab();
+const KEY_VISTA = 'intercambio-admin-vista';
+let vistaActiva = leerVista();
+
+function leerVista() {
+  try { return sessionStorage.getItem(KEY_VISTA) === 'participantes' ? 'participantes' : 'resumen'; } catch { return 'resumen'; }
+}
 
 const ICO = {
   wa: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.7-.4Z"/></svg>',
@@ -22,6 +28,11 @@ const ICO = {
   cerrar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>',
   mas: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
   flecha: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>',
+  resumen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
+  personas: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/></svg>',
+  link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>',
+  regalo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg>',
+  lista: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1 1 2-2M3.5 12l1 1 2-2M3.5 18l1 1 2-2"/></svg>',
   abrir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>',
 };
 
@@ -65,22 +76,33 @@ function pedirPin() {
 function iniciar() {
   if (iniciado) return;
   iniciado = true;
+  document.body.classList.add('con-nav');
   raiz.innerHTML = `
+    <nav class="nav-admin" aria-label="Secciones del panel">
+      <button type="button" class="nav-item" data-accion="vista" data-vista="resumen">${ICO.resumen}<span>Resumen</span></button>
+      <button type="button" class="nav-item" data-accion="vista" data-vista="participantes">${ICO.personas}<span>Participantes</span><span class="contador" id="nav-total">0</span></button>
+      <button type="button" class="nav-item nav-agregar" data-accion="agregar">${ICO.mas}<span>Agregar</span></button>
+    </nav>
     <div id="inicial"></div>
-    <div class="barra-admin">
-      <div class="segmento tabs" role="tablist" id="tabs"></div>
-      <div class="barra-acciones">
-        <input type="search" id="filtro" placeholder="Buscar…" aria-label="Buscar participante">
-        <button class="btn btn-primario btn-agregar" type="button" data-accion="agregar">${ICO.mas}<span>Agregar</span></button>
-      </div>
+
+    <div id="vista-resumen" class="vista">
+      <div class="kpis" id="kpis"></div>
+      <div class="resumen-grid" id="resumen-grupos"></div>
+      <section class="card" id="por-enviar"></section>
     </div>
-    <section class="card resumen" id="resumen"></section>
-    <section class="card tabla">
-      <div class="tabla-cab" aria-hidden="true">
-        <span>Participante</span><span>Le regala a</span><span>Estado</span><span></span>
+
+    <div id="vista-participantes" class="vista" hidden>
+      <div class="barra-admin">
+        <div class="segmento tabs" role="tablist" id="tabs"></div>
+        <input type="search" id="filtro" placeholder="Buscar participante…" aria-label="Buscar participante">
       </div>
-      <ul class="filas" id="filas"></ul>
-    </section>
+      <section class="card tabla">
+        <div class="tabla-cab" aria-hidden="true">
+          <span>Participante</span><span>Le regala a</span><span>Estado</span><span></span>
+        </div>
+        <ul class="filas" id="filas"></ul>
+      </section>
+    </div>
     <p class="centro"><button class="btn-link" type="button" data-accion="cerrar">Cerrar sesión de organizador</button></p>
     <dialog class="hoja" id="hoja" aria-labelledby="hoja-titulo"></dialog>
     <dialog class="dialogo dialogo-form" id="dlg-agregar" aria-labelledby="agregar-titulo"></dialog>`;
@@ -112,11 +134,70 @@ function iniciales(nombre) {
 function pintar() {
   if (!iniciado) return;
   pintarInicial();
-  pintarTabs();
-  pintarResumen();
-  pintarFilas();
+  pintarNav();
+  if (vistaActiva === 'resumen') pintarDashboard();
+  else {
+    pintarTabs();
+    pintarFilas();
+  }
   const hoja = document.getElementById('hoja');
   if (hoja.open) pintarHoja();
+}
+
+function pintarNav() {
+  document.getElementById('nav-total').textContent = personas.length;
+  document.querySelectorAll('.nav-item[data-vista]').forEach((b) => {
+    const activo = b.dataset.vista === vistaActiva;
+    b.classList.toggle('activo', activo);
+    b.setAttribute('aria-current', activo ? 'page' : 'false');
+  });
+  document.getElementById('vista-resumen').hidden = vistaActiva !== 'resumen';
+  document.body.classList.toggle('dash', vistaActiva === 'resumen');
+  document.getElementById('vista-participantes').hidden = vistaActiva !== 'participantes';
+}
+
+function cambiarVista(v) {
+  vistaActiva = v;
+  try { sessionStorage.setItem(KEY_VISTA, v); } catch { /* sin storage */ }
+  pintar();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function kpi(valor, total, etiqueta, ico) {
+  const pct = total ? Math.round((valor / total) * 100) : 0;
+  return `<div class="kpi">
+    <span class="kpi-ico" aria-hidden="true">${ico}</span>
+    <div class="kpi-txt"><b>${valor}<small>/${total}</small></b><span>${etiqueta}</span></div>
+    <div class="kpi-barra" aria-hidden="true"><span style="width:${pct}%"></span></div>
+  </div>`;
+}
+
+function pintarDashboard() {
+  const asignados = personas.reduce((s, p) => s + (p.amigos || []).length, 0);
+  const cupos = personas.reduce((s, p) => s + cupoDe(p), 0);
+  document.getElementById('kpis').innerHTML = personas.length ? [
+    kpi(personas.filter((p) => p.visto).length, personas.length, 'Abrieron su link', ICO.link),
+    kpi(asignados, cupos, 'Regalos asignados', ICO.regalo),
+    kpi(personas.filter((p) => listaCompleta(listaDe(p))).length, personas.length, 'Listas completas', ICO.lista),
+  ].join('') : '';
+
+  document.getElementById('resumen-grupos').innerHTML = Object.keys(grupos).map((g) => htmlResumenGrupo(g)).join('');
+
+  const porEnviar = personas.filter((p) => !p.visto);
+  const sec = document.getElementById('por-enviar');
+  sec.hidden = !personas.length;
+  sec.innerHTML = `<div class="resumen-cab">
+      <h2 class="card-titulo">Links por enviar</h2>
+      <span class="nota">${porEnviar.length ? `${porEnviar.length} aún no abren su link` : ''}</span>
+    </div>
+    ${porEnviar.length ? `<ul class="envios">${porEnviar.map((p) => `<li class="envio">
+        <button type="button" class="envio-nombre" data-accion="detalle" data-id="${esc(p.id)}">
+          <span class="avatar avatar-chico" aria-hidden="true">${esc(iniciales(p.nombre))}</span>
+          <span><b>${esc(p.nombre)}</b><small>${p.grupo === 'menores' ? `Hijos · ${esc(p.responsable || 'papás')}` : 'Mayores'}</small></span>
+        </button>
+        <a class="btn-icono btn-icono-wa" href="${esc(waUrl(mensajeWa(p)))}" target="_blank" rel="noopener" title="Enviar por WhatsApp" aria-label="Enviar link de ${esc(p.nombre)} por WhatsApp">${ICO.wa}</a>
+        <button type="button" class="btn-icono" data-accion="copiar" data-id="${esc(p.id)}" title="Copiar link" aria-label="Copiar link de ${esc(p.nombre)}">${ICO.copiar}</button>
+      </li>`).join('')}</ul>` : '<p class="exito">Todos ya abrieron su link.</p>'}`;
 }
 
 // Participantes ya creados sin sexo que coinciden con la lista inicial.
@@ -165,13 +246,12 @@ function chipsPersonas(lista) {
   return lista.map((p) => `<button type="button" class="chip chip-btn" data-accion="detalle" data-id="${esc(p.id)}">${esc(p.nombre)}</button>`).join('');
 }
 
-function pintarResumen() {
-  const sec = document.getElementById('resumen');
-  const gente = delGrupo(grupoActivo);
+function htmlResumenGrupo(g) {
+  const gente = delGrupo(g);
+  const ver = `<button type="button" class="enlace-ver" data-accion="ir-grupo" data-grupo="${g}">Ver lista ${ICO.flecha}</button>`;
   if (!gente.length) {
-    sec.innerHTML = `<h2 class="card-titulo">${esc(grupos[grupoActivo])}</h2>
-      <p class="vacio">Aún no hay participantes. Usa <b>Agregar</b> para sumar el primero.</p>`;
-    return;
+    return `<section class="card resumen"><div class="resumen-cab"><h2 class="card-titulo">${esc(grupos[g])}</h2></div>
+      <p class="vacio">Aún no hay participantes. Usa <b>Agregar</b> para sumar el primero.</p></section>`;
   }
   const dador = mapaDadores();
   const asignados = gente.reduce((s, p) => s + (p.amigos || []).length, 0);
@@ -179,20 +259,21 @@ function pintarResumen() {
   const faltanDar = gente.filter((p) => (p.amigos || []).length < cupoDe(p));
   const faltanRecibir = gente.filter((p) => !dador.has(p.publicId));
 
-  sec.innerHTML = `
+  return `<section class="card resumen">
     <div class="resumen-cab">
-      <h2 class="card-titulo">${esc(grupos[grupoActivo])}</h2>
-      <span class="nota">${gente.length} participantes</span>
+      <h2 class="card-titulo" title="${esc(grupos[g])}">${g === 'menores' ? 'Hijos' : 'Mayores'} <span class="contador">${gente.length}</span></h2>
+      ${ver}
     </div>
     <div class="progresos">
       ${barra('Abrieron su link', gente.filter((p) => p.visto).length, gente.length)}
       ${barra('Regalos asignados', asignados, cupos)}
       ${barra('Listas completas', gente.filter((p) => listaCompleta(listaDe(p))).length, gente.length)}
     </div>
-    ${cupos === gente.length ? '' : `<p class="alerta">Hay <b>${cupos} regalos</b> para <b>${gente.length} personas</b>. Ajusta "Regalos que da" para que coincidan (por ejemplo, 0 a quien no regala).</p>`}
+    ${cupos === gente.length ? '' : `<p class="alerta"><b>${cupos} regalos</b> para <b>${gente.length} personas</b>: pon 0 en "Regalos que da" a quien no regala.</p>`}
     ${faltanDar.length ? `<div class="pendientes"><span class="pendientes-tit">Falta indicar a quién regalan</span><div class="chips">${chipsPersonas(faltanDar)}</div></div>` : ''}
     ${faltanRecibir.length ? `<div class="pendientes"><span class="pendientes-tit">Nadie los eligió aún</span><div class="chips">${chipsPersonas(faltanRecibir)}</div></div>` : ''}
-    ${!faltanDar.length && !faltanRecibir.length ? '<p class="exito">Todas las asignaciones están completas.</p>' : ''}`;
+    ${!faltanDar.length && !faltanRecibir.length ? '<p class="exito">Todas las asignaciones están completas.</p>' : ''}
+  </section>`;
 }
 
 function pintarFilas() {
@@ -595,6 +676,14 @@ raiz.addEventListener('click', async (e) => {
   switch (b.dataset.accion) {
     case 'tab':
       cambiarTab(b.dataset.grupo);
+      break;
+    case 'vista':
+      cambiarVista(b.dataset.vista);
+      break;
+    case 'ir-grupo':
+      grupoActivo = b.dataset.grupo;
+      try { sessionStorage.setItem(KEY_TAB, grupoActivo); } catch { /* sin storage */ }
+      cambiarVista('participantes');
       break;
     case 'detalle':
       abrirDetalle(b.dataset.id);
