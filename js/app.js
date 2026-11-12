@@ -3,7 +3,7 @@ import { ajustes, grupos } from './config.js';
 import {
   esc, linkPersonal, copiar, toast, waUrl, dinero, confirmar, cargando, listaCompleta,
   htmlTarjetasRegalos, ICONO_REGALO, ICONO_WA, aplicarMarca, ordenarPorNombre, celebrar,
-  comprimirImagen, imagenSegura,
+  comprimirImagen, imagenSegura, disponible, vecesDe, recibeDe,
 } from './util.js';
 
 const KEY_CLAVE = 'intercambio-clave';
@@ -291,7 +291,8 @@ function pintarAmigo(forzar = false) {
 
   let form = '';
   if (!completo) {
-    const opciones = listas.filter((l) => l.grupo === persona.grupo && l.id !== persona.publicId && !l.tomado);
+    const opciones = listas.filter((l) => l.grupo === persona.grupo && l.id !== persona.publicId
+      && !(persona.amigos || []).includes(l.id) && disponible(l));
     form = opciones.length
       ? `<form id="form-amigo" class="pila">
           <label class="campo"><span>${amigos.length ? 'Te toca regalar a una persona más. ¿A quién?' : 'Me tocó…'}</span>
@@ -531,15 +532,22 @@ async function elegirAmigo(btn) {
     aceptar: 'Sí, confirmar',
   });
   if (!ok) return;
-  if (listas.find((l) => l.id === id)?.tomado) {
+  const actual = listas.find((l) => l.id === id);
+  if (!disponible(actual)) {
     return toast('Esa persona ya fue elegida por otro participante. Avisa al organizador.', 'error');
   }
 
   cargando(btn, true);
   const ahora = Date.now();
+  // Quien recibe 1 regalo: solo se marca "tomado" (como siempre).
+  // Quien recibe más (p. ej. Gian): se suma una vez y se marca "tomado" al llenarse.
+  const veces = vecesDe(actual) + 1;
+  const marca = recibeDe(actual) > 1
+    ? { veces, tomado: veces >= recibeDe(actual), actualizado: ahora }
+    : { tomado: true, actualizado: ahora };
   await api.lote([
     { tipo: 'update', col: 'personas', id: clave, datos: { amigos: [...(persona.amigos || []), id], actualizado: ahora } },
-    { tipo: 'update', col: 'listas', id, datos: { tomado: true, actualizado: ahora } },
+    { tipo: 'update', col: 'listas', id, datos: marca },
   ]);
   amigoElegido = '';
   btn.blur();

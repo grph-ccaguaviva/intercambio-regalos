@@ -75,6 +75,12 @@ export const dinero = (n) => {
   return `${ajustes.moneda} ${Number.isInteger(v) ? v : v.toFixed(2)}`;
 };
 
+// Cuántos regalos recibe una persona y cuántas veces ya la eligieron.
+// Listas antiguas solo tienen "tomado" (sin "veces"): cuenta como 1.
+export const recibeDe = (l) => l?.recibe ?? 1;
+export const vecesDe = (l) => l?.veces ?? (l?.tomado ? 1 : 0);
+export const disponible = (l) => vecesDe(l) < recibeDe(l);
+
 export const listaCompleta = (p) =>
   Array.isArray(p?.regalos) && p.regalos.length >= ajustes.cantidadRegalos;
 

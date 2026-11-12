@@ -2,7 +2,7 @@ import api, { modoDemo } from './db.js';
 import { ajustes, grupos, sexos, participantesIniciales } from './config.js';
 import {
   esc, linkPersonal, copiar, toast, waUrl, dinero, confirmar, cargando, listaCompleta,
-  htmlRegalos, normalizar, codigo, aplicarMarca, ordenarPorNombre,
+  htmlRegalos, normalizar, codigo, aplicarMarca, ordenarPorNombre, recibeDe,
 } from './util.js';
 
 const N = ajustes.cantidadRegalos;
@@ -118,11 +118,13 @@ function iniciar() {
 function listaDe(p) { return listas.find((l) => l.id === p.publicId) || { regalos: [] }; }
 function cupoDe(p) { return p.cupo ?? 1; }
 function delGrupo(g) { return personas.filter((p) => p.grupo === g); }
+// publicId -> personas que le regalan (puede ser más de una si recibe 2 o más).
 function mapaDadores() {
   const m = new Map();
-  personas.forEach((p) => (p.amigos || []).forEach((id) => m.set(id, p)));
+  personas.forEach((p) => (p.amigos || []).forEach((id) => m.set(id, [...(m.get(id) || []), p])));
   return m;
 }
+function recibeDeP(p) { return recibeDe(listaDe(p)); }
 function nombrePorPublicId(id) {
   return personas.find((p) => p.publicId === id)?.nombre || '—';
 }
@@ -260,7 +262,8 @@ function htmlResumenGrupo(g) {
   const asignados = gente.reduce((s, p) => s + (p.amigos || []).length, 0);
   const cupos = gente.reduce((s, p) => s + cupoDe(p), 0);
   const faltanDar = gente.filter((p) => (p.amigos || []).length < cupoDe(p));
-  const faltanRecibir = gente.filter((p) => !dador.has(p.publicId));
+  const faltanRecibir = gente.filter((p) => (dador.get(p.publicId) || []).length < recibeDeP(p));
+  const reciben = gente.reduce((s, p) => s + recibeDeP(p), 0);
 
   return `<section class="card resumen">
     <div class="resumen-cab">
@@ -272,9 +275,9 @@ function htmlResumenGrupo(g) {
       ${barra('Regalos asignados', asignados, cupos)}
       ${barra('Listas completas', gente.filter((p) => listaCompleta(listaDe(p))).length, gente.length)}
     </div>
-    ${cupos === gente.length ? '' : `<p class="alerta"><b>${cupos} regalos</b> para <b>${gente.length} personas</b>: pon 0 en "Regalos que da" a quien no regala.</p>`}
+    ${cupos === reciben ? '' : `<p class="alerta">Se dan <b>${cupos} regalos</b> y se reciben <b>${reciben}</b>: revisa "Regalos que da" y "Regalos que recibe".</p>`}
     ${faltanDar.length ? `<div class="pendientes"><span class="pendientes-tit">Falta indicar a quién regalan</span><div class="chips">${chipsPersonas(faltanDar)}</div></div>` : ''}
-    ${faltanRecibir.length ? `<div class="pendientes"><span class="pendientes-tit">Nadie los eligió aún</span><div class="chips">${chipsPersonas(faltanRecibir)}</div></div>` : ''}
+    ${faltanRecibir.length ? `<div class="pendientes"><span class="pendientes-tit">Falta quien les regale</span><div class="chips">${chipsPersonas(faltanRecibir)}</div></div>` : ''}
     ${!faltanDar.length && !faltanRecibir.length ? '<p class="exito">Todas las asignaciones están completas.</p>' : ''}
   </section>`;
 }
@@ -431,15 +434,18 @@ function pintarHoja(forzar = false) {
   const amigos = p.amigos || [];
   const dador = mapaDadores();
   const otros = ordenarPorNombre(delGrupo(p.grupo).filter((o) => o.id !== p.id));
-  const quienLeRegala = dador.get(p.publicId);
+  const leRegalan = (dador.get(p.publicId) || []).length;
+  const recibe = recibeDeP(p);
 
   let selects = '';
   for (let i = 0; i < total; i++) {
     const actual = amigos[i] || '';
     const opciones = otros.map((o) => {
-      const d = dador.get(o.publicId);
-      const tomado = d && !(d.id === p.id && o.publicId === actual);
-      return `<option value="${esc(o.publicId)}" ${o.publicId === actual ? 'selected' : ''} ${tomado ? 'disabled' : ''}>${esc(o.nombre)}${tomado ? ` (ya lo eligió ${esc(d.nombre)})` : ''}</option>`;
+      // Quienes ya le regalan a "o", sin contar este mismo casillero.
+      const otrosDadores = (dador.get(o.publicId) || []).filter((d) => !(d.id === p.id && o.publicId === actual));
+      const lleno = otrosDadores.length >= recibeDeP(o) || (o.publicId !== actual && amigos.includes(o.publicId));
+      const nota = lleno && otrosDadores.length ? ` (ya lo eligió ${otrosDadores.map((d) => d.nombre).join(' y ')})` : '';
+      return `<option value="${esc(o.publicId)}" ${o.publicId === actual ? 'selected' : ''} ${lleno ? 'disabled' : ''}>${esc(o.nombre)}${esc(nota)}</option>`;
     }).join('');
     selects += `<label class="campo"><span>${total > 1 ? `Le regala a (${i + 1} de ${total})` : 'Le regala a'}</span>
       <select data-slot="${i}" data-id="${esc(p.id)}"><option value="">— Sin asignar —</option>${opciones}</select>
@@ -473,7 +479,10 @@ function pintarHoja(forzar = false) {
           <select data-cupo="${esc(p.id)}">${[0, 1, 2, 3].map((n) => `<option value="${n}" ${n === total ? 'selected' : ''}>${n}</option>`).join('')}</select>
         </label>
         ${selects || '<p class="nota">No regala en este intercambio.</p>'}
-        <p class="nota">${quienLeRegala ? 'Ya alguien lo eligió como amigo secreto.' : 'Nadie lo ha elegido todavía.'}</p>
+        <label class="campo campo-linea"><span>Regalos que recibe</span>
+          <select data-recibe="${esc(p.id)}">${[1, 2, 3].map((n) => `<option value="${n}" ${n === recibe ? 'selected' : ''}>${n}</option>`).join('')}</select>
+        </label>
+        <p class="nota">${recibe > 1 ? `Lo eligieron ${leRegalan} de ${recibe} veces.` : (leRegalan ? 'Ya alguien lo eligió como amigo secreto.' : 'Nadie lo ha elegido todavía.')}</p>
       </section>
 
       <section class="bloque">
@@ -539,16 +548,17 @@ function opsCrear({ nombre, grupo, sexo = '', cupo = 1, responsable = '' }) {
   ];
 }
 
-// Cambia los amigos de una persona y mantiene "tomado" de las listas en sincronía.
+// Cambia los amigos de una persona y recalcula "veces"/"tomado" de las listas afectadas.
 function opsAmigos(p, nuevos) {
   const antes = p.amigos || [];
   const ahora = Date.now();
   const ops = [{ tipo: 'update', col: 'personas', id: p.id, datos: { amigos: nuevos, actualizado: ahora } }];
-  antes.filter((id) => !nuevos.includes(id)).forEach((id) => {
-    if (listas.some((l) => l.id === id)) ops.push({ tipo: 'update', col: 'listas', id, datos: { tomado: false, actualizado: ahora } });
-  });
-  nuevos.filter((id) => !antes.includes(id)).forEach((id) => {
-    ops.push({ tipo: 'update', col: 'listas', id, datos: { tomado: true, actualizado: ahora } });
+  const afectadas = [...antes.filter((id) => !nuevos.includes(id)), ...nuevos.filter((id) => !antes.includes(id))];
+  afectadas.forEach((id) => {
+    const l = listas.find((x) => x.id === id);
+    if (!l) return;
+    const veces = personas.filter((o) => o.id !== p.id && (o.amigos || []).includes(id)).length + (nuevos.includes(id) ? 1 : 0);
+    ops.push({ tipo: 'update', col: 'listas', id, datos: { veces, tomado: veces >= recibeDe(l), actualizado: ahora } });
   });
   return ops;
 }
@@ -704,6 +714,17 @@ raiz.addEventListener('change', async (e) => {
     ops[0].datos.cupo = cupo;
     el.blur();
     return ejecutar(ops, 'Cupo actualizado');
+  }
+  if (el.dataset.recibe) {
+    const p = personas.find((x) => x.id === el.dataset.recibe);
+    const recibe = Number(el.value);
+    const veces = (mapaDadores().get(p.publicId) || []).length;
+    el.blur();
+    if (recibe < veces) {
+      toast(`Ya lo eligieron ${veces} veces: primero quita una asignación.`, 'error');
+      return pintarHoja(true);
+    }
+    return ejecutar([{ tipo: 'update', col: 'listas', id: p.publicId, datos: { recibe, veces, tomado: veces >= recibe, actualizado: Date.now() } }], 'Actualizado');
   }
   if (el.dataset.slot) {
     const p = personas.find((x) => x.id === el.dataset.id);

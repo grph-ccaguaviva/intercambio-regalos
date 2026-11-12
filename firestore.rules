@@ -22,6 +22,10 @@ service cloud.firestore {
     function soloCambia(campos) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(campos);
     }
+    // Veces que ya eligieron esta lista (las antiguas solo tienen "tomado").
+    function vecesAntes() {
+      return resource.data.get('veces', resource.data.tomado == true ? 1 : 0);
+    }
     function ruta(col, id) {
       return /databases/$(database)/documents/$(col)/$(id);
     }
@@ -44,10 +48,17 @@ service cloud.firestore {
       allow read: if true;
       allow create, delete: if esAdmin();
       allow update: if esAdmin() || (abierto() && (
-        // Alguien la elige como amigo secreto (solo una vez).
+        // Alguien la elige como amigo secreto (quien recibe 1 regalo: solo una vez).
         (soloCambia(['tomado', 'actualizado'])
+          && resource.data.get('recibe', 1) == 1
           && resource.data.tomado == false
           && request.resource.data.tomado == true)
+        // Quien recibe varios regalos (recibe > 1): cada elección suma 1 hasta llenarse.
+        || (soloCambia(['veces', 'tomado', 'actualizado'])
+          && resource.data.get('recibe', 1) > 1
+          && request.resource.data.veces == vecesAntes() + 1
+          && request.resource.data.veces <= resource.data.get('recibe', 1)
+          && request.resource.data.tomado == (request.resource.data.veces >= resource.data.get('recibe', 1)))
         // Su dueño edita sus regalos (la firma del mismo lote trae su clave).
         || (soloCambia(['regalos', 'actualizado'])
           && request.resource.data.regalos is list
