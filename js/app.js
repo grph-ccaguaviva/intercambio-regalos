@@ -392,7 +392,9 @@ function pintarDeseos() {
       </div>`;
     return;
   }
-  const nombre = amigos.length === 1 ? esc(amigos[0].nombre) : 'tus amigos secretos';
+  const encabezado = amigos.length === 1
+    ? `Lo que desea ${esc(amigos[0].nombre)}`
+    : `Lo que desean ${amigos.map((a) => esc(a.nombre)).join(' y ')}`;
   const bloques = amigos.map((a) => {
     const cab = amigos.length > 1 ? `<h3 class="sub-titulo">${esc(a.nombre)}</h3>` : '';
     if (!a.regalos?.length) {
@@ -400,7 +402,7 @@ function pintarDeseos() {
     }
     return `${cab}${htmlTarjetasRegalos(a.regalos)}`;
   }).join('');
-  sec.innerHTML = `${titulo(`Lo que desea ${nombre}`)}
+  sec.innerHTML = `${titulo(encabezado)}
     <p class="nota">Elige una de estas opciones. ¡Recuerda que es secreto!</p>
     ${bloques}`;
 }

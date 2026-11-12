@@ -29,15 +29,23 @@ function imagenDemo(texto, c1, c2) {
   return `data:image/svg+xml;base64,${btoa(bin)}`;
 }
 
+// ?demo=2 muestra a alguien que regala a dos personas (como Gian).
 function datosDemo() {
   const ahora = Date.now();
+  const dos = new URLSearchParams(location.search).get('demo') === '2';
+  const regalosJose = dos ? [
+    { nombre: 'Polo deportivo', precio: 70, donde: 'https://www.adidas.pe', detalle: 'Talla L, color azul marino o negro. Tela que respire.', imagen: imagenDemo('Polo', '#174a33', '#2a9d8c') },
+    { nombre: 'Biblia de estudio', precio: 90, donde: 'Librería Crisol', detalle: 'Versión Reina Valera 1960, letra grande.', imagen: imagenDemo('Biblia', '#003a58', '#00739c') },
+    { nombre: 'Gift card de cine', precio: 50, donde: 'Cineplanet', detalle: 'Para ir con mi familia.', imagen: imagenDemo('Gift card', '#b45309', '#f39200') },
+  ] : [];
   return {
     personas: {
-      [CLAVE_DEMO]: { nombre: 'Invitado', grupo: 'mayores', sexo: '', cupo: 1, responsable: '', publicId: 'demo-yo', amigos: ['demo-maria'], visto: true, creado: ahora, actualizado: ahora },
+      [CLAVE_DEMO]: { nombre: dos ? 'Gian (demo)' : 'Invitado', grupo: 'mayores', sexo: '', cupo: dos ? 2 : 1, responsable: '', publicId: 'demo-yo', amigos: dos ? ['demo-maria', 'demo-jose'] : ['demo-maria'], visto: true, creado: ahora, actualizado: ahora },
     },
     listas: {
       'demo-yo': { nombre: 'Invitado', grupo: 'mayores', regalos: [], tomado: false, actualizado: ahora },
-      'demo-jose': { nombre: 'José', grupo: 'mayores', regalos: [], tomado: false, actualizado: ahora },
+      'demo-jose': { nombre: 'José', grupo: 'mayores', regalos: regalosJose, tomado: dos, actualizado: ahora },
+      'demo-ana': { nombre: 'Ana', grupo: 'mayores', regalos: [], tomado: false, actualizado: ahora },
       'demo-maria': {
         nombre: 'María', grupo: 'mayores', tomado: true, actualizado: ahora,
         regalos: [
