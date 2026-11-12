@@ -320,6 +320,21 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--g
 .pila-grupos { display: grid; gap: 16px; }
 .fila-buscar { padding: 12px; }
 .campo-linea { grid-template-columns: 1fr 88px; align-items: center; }
+.campo[hidden] { display: none; }
+.sin-margen { margin-top: 0; }
+
+.segmento { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; }
+.segmento label { position: relative; }
+.segmento input { position: absolute; opacity: 0; pointer-events: none; }
+.segmento span { display: block; padding: 10px; border-radius: 9px; text-align: center; font-weight: 700; color: var(--muted); cursor: pointer; transition: background-color .15s, color .15s; }
+.segmento input:checked + span { background: #fff; color: var(--navy); box-shadow: 0 1px 3px rgba(37, 54, 69, .15); }
+.segmento input:focus-visible + span { outline: 3px solid var(--gold); outline-offset: 1px; }
+
+.fila-form { display: grid; gap: 14px; }
+@media (min-width: 720px) {
+  .fila-form { grid-template-columns: 1fr 1fr 130px; align-items: end; }
+  .fila-form:not(:has(#campo-resp:not([hidden]))) { grid-template-columns: 1fr 130px; }
+}
 .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; box-shadow: var(--shadow); }
 .stat b { display: block; font-family: var(--display); font-size: 1.8rem; line-height: 1.1; }

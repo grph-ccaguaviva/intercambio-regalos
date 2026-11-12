@@ -50,24 +50,35 @@ function iniciar() {
   iniciado = true;
   raiz.innerHTML = `
     <div id="inicial"></div>
-    <div class="fila-buscar card">
+    <section class="card">
+      <h2 class="card-titulo">Agregar participante</h2>
+      <form id="form-agregar" class="pila form-agregar" autocomplete="off">
+        <div class="campo">
+          <span id="lbl-grupo">Intercambio</span>
+          <div class="segmento" role="radiogroup" aria-labelledby="lbl-grupo">
+            <label><input type="radio" name="grupo" value="mayores" checked><span>Mayores</span></label>
+            <label><input type="radio" name="grupo" value="menores"><span>Hijos</span></label>
+          </div>
+        </div>
+        <div class="fila-form">
+          <label class="campo"><span>Nombre</span>
+            <input id="nuevo-nombre" maxlength="60" placeholder="Ej.: Paola" enterkeyhint="done">
+          </label>
+          <label class="campo" id="campo-resp" hidden><span>Papás o responsables</span>
+            <input id="nuevo-resp" maxlength="80" placeholder="Ej.: Victor y Sarai" enterkeyhint="done">
+          </label>
+          <label class="campo campo-cupo"><span>Regalos que da</span>
+            <select id="nuevo-cupo">${[0, 1, 2, 3].map((n) => `<option value="${n}" ${n === 1 ? 'selected' : ''}>${n}</option>`).join('')}</select>
+          </label>
+        </div>
+        <button class="btn btn-primario" type="submit">Agregar participante</button>
+        <p class="nota">Al agregar, el formulario queda listo para el siguiente nombre.</p>
+      </form>
+    </section>
+    <div class="fila-buscar card" id="buscador" hidden>
       <input type="search" id="filtro" placeholder="Buscar participante…" aria-label="Buscar participante">
     </div>
     <div id="grupos" class="pila-grupos"></div>
-    <section class="card">
-      <h2 class="card-titulo">Agregar participantes</h2>
-      <form id="form-agregar" class="pila">
-        <label class="campo"><span>Intercambio</span>
-          <select id="nuevo-grupo">
-            ${Object.entries(grupos).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}
-          </select>
-        </label>
-        <label class="campo"><span>Un nombre por línea <small>(para niños: Nombre | Papás)</small></span>
-          <textarea id="nuevos" rows="4" placeholder="Ana&#10;Luis&#10;Lara | Victor y Sarai"></textarea>
-        </label>
-        <button class="btn btn-primario" type="submit">Agregar</button>
-      </form>
-    </section>
     <p class="centro"><button class="btn-link" type="button" data-accion="cerrar">Cerrar sesión de organizador</button></p>`;
 
   const onErr = (err) => { console.error(err); toast('No se pudieron cargar los datos.', 'error'); };
@@ -82,6 +93,7 @@ function cupoDe(p) { return p.cupo ?? 1; }
 
 function pintar() {
   if (!iniciado) return;
+  document.getElementById('buscador').hidden = personas.length < 6;
   const inicial = document.getElementById('inicial');
   inicial.innerHTML = personas.length ? '' : `<section class="card">
     <h2 class="card-titulo">Empezar</h2>
@@ -175,6 +187,7 @@ function htmlPersona(p, delGrupo, dador) {
       <button class="btn btn-chico" type="button" data-accion="copiar" data-id="${esc(p.id)}">Copiar link</button>
       <a class="btn btn-chico btn-wa" href="${esc(waUrl(mensajeWa(p)))}" target="_blank" rel="noopener">WhatsApp</a>
       <a class="btn btn-chico" href="${esc(`${linkPersonal(p.id)}&admin=1`)}" target="_blank" rel="noopener">Abrir / llenar</a>
+      <button class="btn btn-chico" type="button" data-accion="editar" data-id="${esc(p.id)}">Editar</button>
       <button class="btn btn-chico" type="button" data-accion="nuevo-link" data-id="${esc(p.id)}">Nuevo link</button>
       <button class="btn btn-chico btn-peligro" type="button" data-accion="eliminar" data-id="${esc(p.id)}">Eliminar</button>
     </div>
@@ -233,6 +246,12 @@ raiz.addEventListener('toggle', (e) => {
 
 raiz.addEventListener('change', async (e) => {
   const el = e.target;
+  if (el.name === 'grupo') {
+    const hijos = el.value === 'menores';
+    document.getElementById('campo-resp').hidden = !hijos;
+    document.getElementById('nuevo-nombre').placeholder = hijos ? 'Ej.: Lara' : 'Ej.: Paola';
+    return;
+  }
   if (el.dataset.cupo) {
     const p = personas.find((x) => x.id === el.dataset.cupo);
     const cupo = Number(el.value);
@@ -258,26 +277,66 @@ raiz.addEventListener('change', async (e) => {
 raiz.addEventListener('submit', async (e) => {
   if (e.target.id !== 'form-agregar') return;
   e.preventDefault();
-  const btn = e.target.querySelector('[type="submit"]');
-  const area = document.getElementById('nuevos');
-  const grupo = document.getElementById('nuevo-grupo').value;
-  const existentes = new Set(personas.filter((p) => p.grupo === grupo).map((p) => normalizar(p.nombre)));
-  const ops = [];
-  let repetidos = 0;
-  for (const linea of area.value.split('\n')) {
-    const [nombreCrudo, resp = ''] = linea.split('|');
-    const nombre = nombreCrudo.trim().replace(/\s+/g, ' ').slice(0, 60);
-    if (!nombre) continue;
-    if (existentes.has(normalizar(nombre))) { repetidos++; continue; }
-    existentes.add(normalizar(nombre));
-    ops.push(...opsCrear({ nombre, grupo, responsable: resp.trim().slice(0, 80) }));
+  const f = e.target;
+  const btn = f.querySelector('[type="submit"]');
+  const inNombre = document.getElementById('nuevo-nombre');
+  const inResp = document.getElementById('nuevo-resp');
+  const grupo = f.grupo.value;
+  const nombre = limpiar(inNombre.value, 60);
+  const responsable = grupo === 'menores' ? limpiar(inResp.value, 80) : '';
+  const cupo = Number(document.getElementById('nuevo-cupo').value);
+
+  if (!nombre) { inNombre.focus(); return toast('Escribe el nombre.', 'error'); }
+  const repetido = personas.find((p) => p.grupo === grupo && normalizar(p.nombre) === normalizar(nombre));
+  if (repetido) {
+    inNombre.select();
+    return toast(`${repetido.nombre} ya está en el ${grupos[grupo].toLowerCase()}.`, 'error');
   }
-  if (!ops.length) return toast(repetidos ? 'Esos nombres ya existen.' : 'Escribe al menos un nombre.', 'error');
+
   cargando(btn, true);
-  await ejecutar(ops, `${ops.length / 2} agregado(s)${repetidos ? `, ${repetidos} repetido(s) omitido(s)` : ''}`);
-  area.value = '';
+  await ejecutar(opsCrear({ nombre, grupo, cupo, responsable }), `${nombre} agregado`);
   cargando(btn, false);
+  inNombre.value = '';
+  inResp.value = '';
+  document.getElementById('nuevo-cupo').value = '1';
+  inNombre.focus();
 });
+
+function limpiar(texto, max) {
+  return texto.trim().replace(/\s+/g, ' ').slice(0, max);
+}
+
+async function editarPersona(p) {
+  const esHijo = p.grupo === 'menores';
+  const d = document.createElement('dialog');
+  d.className = 'dialogo';
+  d.innerHTML = `<form method="dialog" class="pila sin-margen">
+    <h3>Editar participante</h3>
+    <label class="campo"><span>Nombre</span><input name="nombre" maxlength="60" value="${esc(p.nombre)}"></label>
+    ${esHijo ? `<label class="campo"><span>Papás o responsables</span><input name="responsable" maxlength="80" value="${esc(p.responsable || '')}"></label>` : ''}
+    <div class="dialogo-acciones">
+      <button value="no" class="btn btn-secundario">Cancelar</button>
+      <button value="si" class="btn btn-primario">Guardar</button>
+    </div>
+  </form>`;
+  document.body.append(d);
+  d.showModal();
+  await new Promise((r) => d.addEventListener('close', r, { once: true }));
+  const form = d.querySelector('form');
+  const nombre = limpiar(form.nombre.value, 60);
+  const responsable = esHijo ? limpiar(form.responsable.value, 80) : '';
+  d.remove();
+  if (d.returnValue !== 'si') return;
+  if (!nombre) return toast('El nombre no puede quedar vacío.', 'error');
+  if (personas.some((o) => o.id !== p.id && o.grupo === p.grupo && normalizar(o.nombre) === normalizar(nombre))) {
+    return toast('Ya existe otro participante con ese nombre.', 'error');
+  }
+  const ahora = Date.now();
+  await ejecutar([
+    { tipo: 'update', col: 'personas', id: p.id, datos: { nombre, responsable, actualizado: ahora } },
+    { tipo: 'update', col: 'listas', id: p.publicId, datos: { nombre, actualizado: ahora } },
+  ], 'Cambios guardados');
+}
 
 raiz.addEventListener('click', async (e) => {
   const b = e.target.closest('[data-accion]');
@@ -291,6 +350,9 @@ raiz.addEventListener('click', async (e) => {
     }
     case 'copiar':
       copiar(linkPersonal(p.id), `Link de ${p.nombre} copiado`);
+      break;
+    case 'editar':
+      await editarPersona(p);
       break;
     case 'nuevo-link':
       if (await confirmar({
