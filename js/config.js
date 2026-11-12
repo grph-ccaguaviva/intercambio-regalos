@@ -39,21 +39,24 @@ export const grupos = {
 };
 
 // Botón "Cargar lista inicial" del panel (solo aparece si no hay participantes).
+// sexo: F (mujer) o M (hombre), solo para ordenar el panel.
 // cupo = a cuántas personas regala. responsable = quién llena la página (niños).
+export const sexos = { F: 'Mujeres', M: 'Hombres' };
+
 export const participantesIniciales = [
-  { nombre: 'Freddy', grupo: 'mayores' },
-  { nombre: 'Gladys', grupo: 'mayores' },
-  { nombre: 'Kathy', grupo: 'mayores' },
-  { nombre: 'Gian', grupo: 'mayores', cupo: 2 },
-  { nombre: 'Wiliam', grupo: 'mayores' },
-  { nombre: 'Gisela', grupo: 'mayores' },
-  { nombre: 'Sarai', grupo: 'mayores' },
-  { nombre: 'Aisquel', grupo: 'mayores' },
-  { nombre: 'Gregory', grupo: 'mayores' },
-  { nombre: 'Victor', grupo: 'mayores' },
-  { nombre: 'Paola', grupo: 'mayores' },
-  { nombre: 'Lara', grupo: 'menores', responsable: 'Victor y Sarai' },
-  { nombre: 'Aslan', grupo: 'menores', responsable: 'Gian y Kathy' },
-  { nombre: 'Mati', grupo: 'menores', responsable: 'Aisquel y Gregory' },
-  { nombre: 'Richard', grupo: 'menores', responsable: 'Freddy y Gladys' },
+  { nombre: 'Freddy', grupo: 'mayores', sexo: 'M' },
+  { nombre: 'Gladys', grupo: 'mayores', sexo: 'F' },
+  { nombre: 'Kathy', grupo: 'mayores', sexo: 'F' },
+  { nombre: 'Gian', grupo: 'mayores', sexo: 'M', cupo: 2 },
+  { nombre: 'Wiliam', grupo: 'mayores', sexo: 'M' },
+  { nombre: 'Gisela', grupo: 'mayores', sexo: 'F' },
+  { nombre: 'Sarai', grupo: 'mayores', sexo: 'F' },
+  { nombre: 'Aisquel', grupo: 'mayores', sexo: 'F' },
+  { nombre: 'Gregory', grupo: 'mayores', sexo: 'M' },
+  { nombre: 'Victor', grupo: 'mayores', sexo: 'M' },
+  { nombre: 'Paola', grupo: 'mayores', sexo: 'F' },
+  { nombre: 'Lara', grupo: 'menores', sexo: 'F', responsable: 'Victor y Sarai' },
+  { nombre: 'Aslan', grupo: 'menores', sexo: 'M', responsable: 'Gian y Kathy' },
+  { nombre: 'Mati', grupo: 'menores', sexo: 'M', responsable: 'Aisquel y Gregory' },
+  { nombre: 'Richard', grupo: 'menores', sexo: 'M', responsable: 'Freddy y Gladys' },
 ];
