@@ -1065,3 +1065,14 @@ main > .nav-admin { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
+
+/* Mensaje privado del organizador */
+.dialogo-mensaje { width: min(440px, calc(100% - 32px)); text-align: center; border-top: 5px solid var(--gold); }
+.dialogo-mensaje .icono-circulo { margin: 0 auto 10px; }
+.dialogo-mensaje .mensaje-texto { color: var(--ink); line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; text-align: left; max-height: 50vh; overflow-y: auto; }
+.dialogo-mensaje .dialogo-acciones { flex-wrap: wrap; }
+.dialogo-mensaje .btn-wa { text-decoration: none; justify-content: center; }
+.dialogo-form textarea { min-height: 110px; resize: vertical; line-height: 1.45; }
+.dialogo-mensaje .dialogo-acciones { flex-direction: column; }
+.dialogo-mensaje .dialogo-acciones .btn { width: 100%; flex: none; }
+.dialogo-mensaje .btn-wa svg { width: 22px; height: 22px; flex: none; }

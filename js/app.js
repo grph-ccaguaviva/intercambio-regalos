@@ -143,6 +143,36 @@ function render() {
     }
   }
   renderPanel();
+  mostrarMensajePrivado();
+}
+
+// Mensaje que el organizador deja solo para esta persona (vive en su doc privado).
+// Se muestra una vez por visita; si incluye un celular peruano, ofrece WhatsApp.
+function mostrarMensajePrivado() {
+  const texto = String(persona.mensaje || '').trim();
+  const marca = `intercambio-mensaje-${clave}`;
+  if (!texto || vistaAdmin || document.querySelector('.dialogo-mensaje')) return;
+  try { if (sessionStorage.getItem(marca) === texto) return; } catch { /* sin storage */ }
+  const cel = texto.match(/(?:\+?51\s?)?(9\d{2})\s?(\d{3})\s?(\d{3})/);
+  const wa = cel
+    ? `https://wa.me/51${cel[1]}${cel[2]}${cel[3]}?text=${encodeURIComponent('Hola, te escribo por el intercambio de regalos.')}`
+    : '';
+  const d = document.createElement('dialog');
+  d.className = 'dialogo dialogo-mensaje';
+  d.innerHTML = `<form method="dialog">
+    <div class="icono-circulo" aria-hidden="true">${ICONO_REGALO}</div>
+    <h3>Un mensaje para ti</h3>
+    <p class="mensaje-texto">${esc(texto)}</p>
+    <div class="dialogo-acciones">
+      ${wa ? `<a class="btn btn-wa" href="${esc(wa)}" target="_blank" rel="noopener">${ICONO_WA}<span>Escribir por WhatsApp</span></a>` : ''}
+      <button value="ok" class="btn btn-primario" autofocus>Gracias</button>
+    </div></form>`;
+  document.body.append(d);
+  d.addEventListener('close', () => {
+    try { sessionStorage.setItem(marca, texto); } catch { /* sin storage */ }
+    d.remove();
+  });
+  d.showModal();
 }
 
 function tabInicial() {

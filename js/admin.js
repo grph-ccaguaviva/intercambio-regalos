@@ -551,6 +551,9 @@ async function editarPersona(p) {
     ${segmentoSexo(p.sexo)}
     <label class="campo"><span>Nombre</span><input name="nombre" maxlength="60" value="${esc(p.nombre)}"></label>
     ${esHijo ? `<label class="campo"><span>Papás o responsables</span><input name="responsable" maxlength="80" value="${esc(p.responsable || '')}"></label>` : ''}
+    <label class="campo"><span>Mensaje privado (opcional)</span>
+      <textarea name="mensaje" maxlength="600" rows="5" placeholder="Solo esta persona lo verá en una ventana al abrir su link.">${esc(p.mensaje || '')}</textarea>
+    </label>
     <div class="dialogo-acciones">
       <button value="no" class="btn btn-secundario">Cancelar</button>
       <button value="si" class="btn btn-primario">Guardar</button>
@@ -563,6 +566,7 @@ async function editarPersona(p) {
   const nombre = limpiar(form.nombre.value, 60);
   const responsable = esHijo ? limpiar(form.responsable.value, 80) : '';
   const sexo = form.sexo.value || p.sexo || '';
+  const mensaje = form.mensaje.value.trim().slice(0, 600);
   d.remove();
   if (d.returnValue !== 'si') return;
   if (!nombre) return toast('El nombre no puede quedar vacío.', 'error');
@@ -571,7 +575,7 @@ async function editarPersona(p) {
   }
   const ahora = Date.now();
   await ejecutar([
-    { tipo: 'update', col: 'personas', id: p.id, datos: { nombre, responsable, sexo, actualizado: ahora } },
+    { tipo: 'update', col: 'personas', id: p.id, datos: { nombre, responsable, sexo, mensaje, actualizado: ahora } },
     { tipo: 'update', col: 'listas', id: p.publicId, datos: { nombre, actualizado: ahora } },
   ], 'Cambios guardados');
 }
