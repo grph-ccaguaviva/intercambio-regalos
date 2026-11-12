@@ -2,8 +2,8 @@ rules_version = '2';
 
 // Reglas para Firestore (pegar en Firebase Console > Firestore > Reglas).
 //
-// Antes de publicar: reemplaza UID_DEL_ORGANIZADOR por el UID del usuario
-// organizador (Firebase > Authentication > Users > columna "User UID").
+// esAdmin() usa el UID del usuario organizador (Firebase > Authentication > Users).
+// Si recreas ese usuario, actualiza el UID aquí y vuelve a publicar las reglas.
 //
 // Privacidad:
 // - personas/{clave}: el id ES el código secreto del link. Se puede leer un documento
@@ -14,7 +14,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function esAdmin() {
-      return request.auth != null && request.auth.uid == 'UID_DEL_ORGANIZADOR';
+      return request.auth != null && request.auth.uid == 'bVaBabMf97TnDVX2JuvDKvNZCV52';
     }
     function abierto() {
       return request.time < timestamp.date(2027, 1, 31);

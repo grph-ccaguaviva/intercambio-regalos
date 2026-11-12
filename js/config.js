@@ -8,12 +8,12 @@
 // los datos se guardan solo en el navegador actual (sirve para probar).
 
 export const firebaseConfig = {
-  apiKey: 'TU_API_KEY',
-  authDomain: 'TU_PROYECTO.firebaseapp.com',
-  projectId: 'TU_PROYECTO',
-  storageBucket: 'TU_PROYECTO.appspot.com',
-  messagingSenderId: '',
-  appId: '',
+  apiKey: 'AIzaSyCR3PFXz8Uzahb9QfelTIpFiPacGH04vc8',
+  authDomain: 'intercambio-regalos-c4da5.firebaseapp.com',
+  projectId: 'intercambio-regalos-c4da5',
+  storageBucket: 'intercambio-regalos-c4da5.firebasestorage.app',
+  messagingSenderId: '120297489133',
+  appId: '1:120297489133:web:efaf70bb29d44c488642e4',
 };
 
 export const ajustes = {
