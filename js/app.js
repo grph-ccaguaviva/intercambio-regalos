@@ -151,7 +151,7 @@ function render() {
 function mostrarMensajePrivado() {
   const texto = String(persona.mensaje || '').trim();
   const marca = `intercambio-mensaje-${clave}`;
-  if (!texto || vistaAdmin || document.querySelector('.dialogo-mensaje')) return;
+  if (!texto || document.querySelector('.dialogo-mensaje')) return;
   try { if (sessionStorage.getItem(marca) === texto) return; } catch { /* sin storage */ }
   const cel = texto.match(/(?:\+?51\s?)?(9\d{2})\s?(\d{3})\s?(\d{3})/);
   const wa = cel
