@@ -138,42 +138,91 @@ export function cargando(btn, activo) {
 }
 
 // Solo imágenes embebidas propias (data URL base64). En <img> un SVG no ejecuta scripts.
+// Las fotos que quedaron en blanco por el error de iPhone pesan ~2.5 KB: se tratan como "sin foto".
 export function imagenSegura(src = '') {
-  return typeof src === 'string' && /^data:image\/(jpeg|png|webp|svg\+xml);base64,[A-Za-z0-9+/=]+$/.test(src);
+  return typeof src === 'string' && !(src.startsWith('data:image/jpeg') && src.length < 3500)
+    && /^data:image\/(jpeg|png|webp|svg\+xml);base64,[A-Za-z0-9+/=]+$/.test(src);
 }
 
-function cargarImagen(file) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('No se pudo leer la imagen')); };
-    img.src = url;
-  });
+// Carga la foto y espera a que esté decodificada: en iPhone, dibujarla antes de
+// terminar de decodificar (fotos grandes/HEIC) deja el lienzo en blanco.
+async function cargarImagen(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error('No se pudo leer la imagen'));
+      i.src = url;
+    });
+    try { await img.decode(); } catch { /* algunos navegadores no lo necesitan */ }
+    return { fuente: img, ancho: img.naturalWidth, alto: img.naturalHeight, cerrar: () => URL.revokeObjectURL(url) };
+  } catch (err) {
+    URL.revokeObjectURL(url);
+    throw err;
+  }
+}
+
+async function cargarBitmap(file) {
+  if (typeof createImageBitmap !== 'function') return null;
+  try {
+    const b = await createImageBitmap(file);
+    return { fuente: b, ancho: b.width, alto: b.height, cerrar: () => b.close?.() };
+  } catch { return null; }
+}
+
+// true si el lienzo quedó todo blanco (la foto no se llegó a dibujar).
+function enBlanco(c) {
+  const m = document.createElement('canvas');
+  m.width = 24; m.height = 24;
+  const ctx = m.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(c, 0, 0, 24, 24);
+  const px = ctx.getImageData(0, 0, 24, 24).data;
+  for (let i = 0; i < px.length; i += 4) {
+    if (px[i] < 250 || px[i + 1] < 250 || px[i + 2] < 250) return false;
+  }
+  return true;
+}
+
+function dibujar(origen, max) {
+  const factor = Math.min(1, max / Math.max(origen.ancho, origen.alto));
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(origen.ancho * factor));
+  c.height = Math.max(1, Math.round(origen.alto * factor));
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.drawImage(origen.fuente, 0, 0, c.width, c.height);
+  return c;
 }
 
 // Reduce la foto en el navegador (máx. ~140 KB) para guardarla junto a la lista sin costo.
+// Si el resultado sale en blanco, reintenta con otro método; si sigue en blanco, avisa.
 export async function comprimirImagen(file, lado = 640) {
-  if (!file?.type?.startsWith('image/')) throw new Error('El archivo no es una imagen');
-  const img = await cargarImagen(file);
-  let max = lado;
-  let url = '';
-  for (let intento = 0; intento < 3; intento++) {
-    const factor = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
-    const c = document.createElement('canvas');
-    c.width = Math.max(1, Math.round(img.naturalWidth * factor));
-    c.height = Math.max(1, Math.round(img.naturalHeight * factor));
-    const ctx = c.getContext('2d');
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, c.width, c.height);
-    ctx.drawImage(img, 0, 0, c.width, c.height);
-    let q = 0.8;
-    url = c.toDataURL('image/jpeg', q);
-    while (url.length > 140000 && q > 0.45) { q -= 0.07; url = c.toDataURL('image/jpeg', q); }
-    if (url.length <= 140000) return url;
-    max = Math.round(max * 0.75);
+  if (!file?.type?.startsWith('image/') && !/\.(heic|heif)$/i.test(file?.name || '')) {
+    throw new Error('El archivo no es una imagen');
   }
-  return url;
+  const metodos = [cargarImagen, cargarBitmap];
+  for (const metodo of metodos) {
+    let origen = null;
+    try { origen = await metodo(file); } catch { origen = null; }
+    if (!origen?.ancho) continue;
+    try {
+      let max = lado;
+      for (let intento = 0; intento < 3; intento++) {
+        const c = dibujar(origen, max);
+        if (enBlanco(c)) break;
+        let q = 0.8;
+        let url = c.toDataURL('image/jpeg', q);
+        while (url.length > 140000 && q > 0.45) { q -= 0.07; url = c.toDataURL('image/jpeg', q); }
+        if (url.length <= 140000 || intento === 2) return url;
+        max = Math.round(max * 0.75);
+      }
+    } finally {
+      origen.cerrar();
+    }
+  }
+  throw new Error('La foto quedó en blanco');
 }
 
 export function htmlTarjetasRegalos(regalos = []) {

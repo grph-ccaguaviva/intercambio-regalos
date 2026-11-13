@@ -459,7 +459,7 @@ app.addEventListener('change', async (e) => {
       box.innerHTML = htmlFoto(i);
     } catch (err) {
       console.error(err);
-      toast('No se pudo usar esa imagen. Prueba con otra foto.', 'error');
+      toast('No se pudo cargar esa foto. Prueba con otra o con una captura de pantalla de la imagen.', 'error');
     } finally {
       box.classList.remove('cargando-foto');
     }
