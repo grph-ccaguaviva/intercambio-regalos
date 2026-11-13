@@ -1094,3 +1094,25 @@ main > .nav-admin { animation: none; }
   .dialogo-mensaje .dialogo-acciones .btn { min-height: 44px; padding-block: 8px; }
 }
 button.enlace-sec { background: none; border: 0; padding: 4px 0; margin-bottom: 8px; font-family: inherit; text-decoration: underline; cursor: pointer; }
+
+/* Visor de fotos de regalos */
+.deseo-zoom { position: absolute; inset: 0; padding: 0; border: 0; background: none; cursor: zoom-in; display: block; }
+.deseo-zoom img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.zoom-pista { position: absolute; right: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 999px; background: rgba(15, 30, 45, .62); color: #fff; font: 700 .7rem/1 inherit; font-family: inherit; }
+.deseo-num { z-index: 1; pointer-events: none; }
+.regalo-zoom { padding: 0; border: 0; background: none; cursor: zoom-in; border-radius: 10px; flex: none; line-height: 0; }
+.visor { border: 0; padding: 0; margin: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; background: rgba(8, 14, 20, .94); color: #fff; display: flex; flex-direction: column; }
+.visor:not([open]) { display: none; }
+.visor::backdrop { background: rgba(8, 14, 20, .94); }
+.visor-barra { display: flex; align-items: center; gap: 12px; padding: max(12px, env(safe-area-inset-top)) 14px 10px 18px; }
+.visor-titulo { flex: 1; margin: 0; font-weight: 700; font-size: .95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.visor-cerrar { width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .14); color: #fff; font-size: 1.8rem; line-height: 1; cursor: pointer; flex: none; }
+.visor-cerrar:hover { background: rgba(255, 255, 255, .24); }
+.visor-marco { flex: 1; min-height: 0; overflow: auto; display: grid; place-items: center; padding: 0 12px; -webkit-overflow-scrolling: touch; }
+.visor-marco img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px; cursor: zoom-in; box-shadow: 0 10px 40px rgba(0, 0, 0, .5); }
+.visor.ampliada .visor-marco { display: block; padding: 0; }
+.visor.ampliada .visor-marco img { max-width: none; max-height: none; width: 220%; border-radius: 0; cursor: zoom-out; }
+.visor-ayuda { margin: 0; padding: 10px 16px max(14px, env(safe-area-inset-bottom)); text-align: center; font-size: .8rem; color: rgba(255, 255, 255, .7); }
+@media (min-width: 900px) { .visor.ampliada .visor-marco img { width: 160%; } }
+@media (prefers-reduced-motion: no-preference) { .visor[open] .visor-marco img { animation: visor-entra .22s ease-out; } }
+@keyframes visor-entra { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }

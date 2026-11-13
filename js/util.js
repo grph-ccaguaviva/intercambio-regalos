@@ -232,7 +232,9 @@ export function htmlTarjetasRegalos(regalos = []) {
     if (url) donde = `<a class="deseo-enlace" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Ver dónde comprarlo <span aria-hidden="true">↗</span></a>`;
     else if (g.donde) donde = `<p class="deseo-donde"><b>Dónde:</b> ${esc(g.donde)}</p>`;
     const img = imagenSegura(g.imagen)
-      ? `<img src="${esc(g.imagen)}" alt="Foto: ${esc(g.nombre)}" loading="lazy">`
+      ? `<button type="button" class="deseo-zoom" data-zoom data-titulo="${esc(g.nombre)}" aria-label="Ver foto de ${esc(g.nombre)} en grande">
+          <img src="${esc(g.imagen)}" alt="Foto: ${esc(g.nombre)}" loading="lazy">
+          <span class="zoom-pista" aria-hidden="true">${ICONO_LUPA} Ver foto</span></button>`
       : `<span class="deseo-sin-foto">${ICONO_REGALO}</span>`;
     return `<article class="deseo">
       <div class="deseo-img">${img}<span class="deseo-num">Opción ${i + 1}</span></div>
@@ -253,7 +255,7 @@ export function htmlRegalos(regalos = []) {
       ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">Ver dónde comprarlo</a>`
       : g.donde ? `<p class="regalo-donde">Dónde: ${esc(g.donde)}</p>` : '';
     const marca = imagenSegura(g.imagen)
-      ? `<img class="regalo-thumb" src="${esc(g.imagen)}" alt="">`
+      ? `<button type="button" class="regalo-zoom" data-zoom data-titulo="${esc(g.nombre)}" aria-label="Ver foto de ${esc(g.nombre)} en grande"><img class="regalo-thumb" src="${esc(g.imagen)}" alt=""></button>`
       : `<span class="regalo-num">${i + 1}</span>`;
     return `<li class="regalo">
       ${marca}
@@ -264,4 +266,51 @@ export function htmlRegalos(regalos = []) {
         ${donde}
       </div></li>`;
   }).join('')}</ol>`;
+}
+
+const ICONO_LUPA = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4M11 8v6M8 11h6"/></svg>';
+
+// Visor de fotos a pantalla completa: toca la foto de un regalo para verla entera.
+// Dentro del visor, tocar la foto la amplía (y se puede desplazar); tocar fuera cierra.
+function abrirVisor(boton) {
+  const origen = boton.querySelector('img');
+  if (!origen || !imagenSegura(origen.getAttribute('src'))) return;
+  const dlg = document.createElement('dialog');
+  dlg.className = 'visor';
+  dlg.innerHTML = `<div class="visor-barra">
+      <p class="visor-titulo"></p>
+      <button type="button" class="visor-cerrar" aria-label="Cerrar">×</button>
+    </div>
+    <div class="visor-marco"><img alt=""></div>
+    <p class="visor-ayuda">Toca la foto para acercar</p>`;
+  const img = dlg.querySelector('.visor-marco img');
+  img.src = origen.getAttribute('src');
+  img.alt = boton.dataset.titulo ? `Foto: ${boton.dataset.titulo}` : 'Foto del regalo';
+  dlg.querySelector('.visor-titulo').textContent = boton.dataset.titulo || '';
+  const ayuda = dlg.querySelector('.visor-ayuda');
+  dlg.addEventListener('click', (e) => {
+    if (e.target === img) {
+      const marco = img.parentElement;
+      const r = img.getBoundingClientRect();
+      const fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
+      const ampliada = dlg.classList.toggle('ampliada');
+      ayuda.textContent = ampliada ? 'Toca otra vez para alejar' : 'Toca la foto para acercar';
+      if (ampliada) {
+        marco.scrollLeft = fx * marco.scrollWidth - marco.clientWidth / 2;
+        marco.scrollTop = fy * marco.scrollHeight - marco.clientHeight / 2;
+      }
+      return;
+    }
+    if (!e.target.closest('.visor-titulo')) dlg.close();
+  });
+  dlg.addEventListener('close', () => dlg.remove());
+  document.body.append(dlg);
+  dlg.showModal();
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', (e) => {
+    const boton = e.target.closest('[data-zoom]');
+    if (boton) { e.preventDefault(); abrirVisor(boton); }
+  });
 }
