@@ -59,8 +59,10 @@ service cloud.firestore {
           && request.resource.data.veces == vecesAntes() + 1
           && request.resource.data.veces <= resource.data.get('recibe', 1)
           && request.resource.data.tomado == (request.resource.data.veces >= resource.data.get('recibe', 1)))
-        // Su dueño edita sus regalos (la firma del mismo lote trae su clave).
+        // Su dueño edita sus regalos (la firma del mismo lote trae su clave),
+        // solo hasta una semana antes del intercambio: 12/12/2026 00:00 de Lima (05:00 UTC).
         || (soloCambia(['regalos', 'actualizado'])
+          && request.time < timestamp.date(2026, 12, 12) + duration.value(5, 'h')
           && request.resource.data.regalos is list
           && request.resource.data.regalos.size() <= 3
           && get(ruta('personas', getAfter(ruta('firmas', id)).data.clave)).data.publicId == id)

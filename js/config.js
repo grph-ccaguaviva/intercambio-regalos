@@ -27,6 +27,11 @@ export const ajustes = {
   // Para el mensaje de invitación que se envía con cada link.
   fecha: '19 de diciembre',
   firma: 'Giancarlo',
+  // Una semana antes del intercambio se cierran las listas de deseos: nadie puede
+  // editarlas (solo el organizador). Hora de Lima. Si cambias esta fecha, cambia
+  // también la de firestore.rules (allí va en UTC: 05:00 = 00:00 de Lima).
+  cierreListas: '2026-12-12T00:00:00-05:00',
+  cierreTexto: '11 de diciembre',
   // Acceso del organizador: en el panel solo se escribe el PIN.
   // - Con Firebase: el PIN es la contraseña del usuario `correoAdmin` creado en
   //   Firebase > Authentication (se valida en el servidor; el PIN no vive en este código).

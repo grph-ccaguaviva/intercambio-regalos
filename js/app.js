@@ -35,6 +35,8 @@ let persona; // undefined = cargando, null = link inválido
 let listas = [];
 let listasCargadas = false;
 let editando = false;
+// Una semana antes del intercambio las listas quedan fijas (el organizador sí puede editar).
+const listasCerradas = () => !vistaAdmin && Date.now() >= Date.parse(ajustes.cierreListas);
 let marcandoVisto = false;
 let amigoElegido = '';
 let tab = TABS.includes(params.get('tab')) ? params.get('tab') : null;
@@ -192,7 +194,7 @@ function renderPanel() {
     app.dataset.vista = vista;
     app.classList.add('app-ancho');
     document.body.classList.add('con-nav');
-    editando = !listaCompleta(miLista());
+    editando = !listaCompleta(miLista()) && !listasCerradas();
     if (editando) prepararFotos();
     tab ??= tabInicial();
     const link = linkPersonal(clave);
@@ -332,13 +334,19 @@ function pintarLista(forzar = false) {
     if (forzar || !sec.querySelector('#form-lista')) sec.innerHTML = htmlFormLista(lista);
     return;
   }
+  const cerrada = listasCerradas();
+  const tiene = (lista.regalos || []).length > 0;
+  const aviso = cerrada
+    ? `<p class="aviso aviso-card aviso-cierre">${ICO.candado} Las listas se cerraron el ${esc(ajustes.cierreTexto)}, una semana antes del intercambio, para que todos puedan comprar con tranquilidad. ${tiene ? 'Tu lista ya no se puede cambiar.' : 'No llegaste a registrar tu lista: avisa al organizador.'}</p>`
+    : `<p class="nota nota-cierre">Puedes cambiar tu lista hasta el <b>${esc(ajustes.cierreTexto)}</b>. Después queda fija para que quien ${esMenor() ? 'le' : 'te'} regala pueda comprar con tranquilidad.</p>`;
   sec.innerHTML = `<div class="sec-cab">
       <div>
-        <h2 class="card-titulo"><span class="paso hecho">✓</span> Lista de deseos ${de}</h2>
+        <h2 class="card-titulo"><span class="paso ${tiene ? 'hecho' : ''}">${tiene ? '✓' : '2'}</span> Lista de deseos ${de}</h2>
         <p class="nota">Esto es lo que verá quien ${esMenor() ? 'le' : 'te'} regala.</p>
       </div>
-      <button class="btn btn-secundario" type="button" data-accion="editar-lista">${ICO.editar}<span>Editar</span></button>
+      ${cerrada ? '' : `<button class="btn btn-secundario" type="button" data-accion="editar-lista">${ICO.editar}<span>Editar</span></button>`}
     </div>
+    ${aviso}
     ${htmlTarjetasRegalos(lista.regalos)}`;
 }
 
@@ -399,6 +407,7 @@ function htmlFormLista(lista) {
       <div>
         <h2 class="card-titulo"><span class="paso">2</span> Lista de deseos ${esMenor() ? `de ${esc(persona.nombre)}` : ''}</h2>
         <p class="nota">Escribe <b>${N} opciones</b> que ${le} gustaría recibir, de <b>${dinero(MIN)}</b> a más. Así quien regala puede elegir.</p>
+        <p class="nota nota-cierre">${ICO.candado} Puedes cambiarla hasta el <b>${esc(ajustes.cierreTexto)}</b>; después queda fija.</p>
       </div>
     </div>
     <form id="form-lista" class="pila" novalidate>
@@ -493,6 +502,7 @@ app.addEventListener('click', async (e) => {
       }
       break;
     case 'editar-lista':
+      if (listasCerradas()) { pintarLista(true); break; }
       editando = true;
       prepararFotos();
       pintarLista(true);
@@ -557,6 +567,11 @@ async function elegirAmigo(btn) {
 }
 
 async function guardarLista(f, btn) {
+  if (listasCerradas()) {
+    editando = false;
+    pintarLista(true);
+    return toast(`Las listas se cerraron el ${ajustes.cierreTexto}. Ya no se pueden cambiar.`, 'error');
+  }
   f.querySelectorAll('.error-msg').forEach((el) => el.remove());
   f.querySelectorAll('[aria-invalid]').forEach((el) => el.removeAttribute('aria-invalid'));
 
